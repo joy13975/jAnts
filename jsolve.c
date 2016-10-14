@@ -18,7 +18,7 @@
 #define DEFAULT_NEWCOMER_RATE       0.2f //20% of new generation are newcomers
 
 #if USE_TINYTEST == 1
-#define INPUT_FILE                  "tinytest.txt"
+#define INPUT_FILE                  "tiny_tsp.txt"
 #else
 #define INPUT_FILE                  "fruitybun250.vrp"
 #endif
