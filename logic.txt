@@ -1,0 +1,5 @@
+1. The impossible minimal cost (disregarding truck capacity) is the solution of travelling salesman to the complete graph of 250 nodes. Note that even finding this is incredbly time consuming on 250 nodes.
+
+2. Can think of this problem like a graph partition/bin packing + TSP.
+
+3. Simplest representation is each a permutation of nodes as chromosome, with fitness evaluated by chopping the chromosome into valid lengths i.e. sum capacity <= 500.
