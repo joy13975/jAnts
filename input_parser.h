@@ -5,7 +5,6 @@
 #include "jsolve_types.h"
 
 void parse_input(const char* input_file,
-                 bool tsp_mode,
                  specification **spec_ptr);
 
 #endif /* include guard */

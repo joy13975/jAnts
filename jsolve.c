@@ -7,11 +7,7 @@
 
 #define LOG_LEVEL                   LOG_DBG//LOG_MSG
 
-#if TINY_TEST_MODE == 1
-#define INPUT_FILE                  "tiny7.vrp"
-#else
 #define INPUT_FILE                  "fruitybun250.vrp"
-#endif
 
 const argument_format af_help       = {"-h", "--help", 0, "Print the help message"};
 const argument_format af_loglv      = {"-l", "--loglv", 1, "Set the log level {0-6}"};
@@ -19,10 +15,6 @@ const argument_format af_seed       = {"-r", "--seed", 1, "Set the starting RNG 
 const argument_format af_pop        = {"-p", "--population", 1, "Set the population size"};
 const argument_format af_svr        = {"-s", "--survival_rate", 1, "Set the ratio of survivors"};
 const argument_format af_ncr        = {"-n", "--newcomer_rate", 1, "Set the ratio of newcomers"};
-const argument_format af_mtf        = {"-m", "--mutation_rate", 1, "Set the probability of mutation per gene"};
-const argument_format af_cgf        = {"-g", "--converge_factor", 1, "Assume convergence after this number of stale iterations"};
-const argument_format af_apu        = {"-au", "--apply_rate_ub", 1, "Set the upper bound of apply probability"};
-const argument_format af_apl        = {"-al", "--apply_rate_lb", 1, "Set the lower bound of apply probability"};
 
 double start_time = -1;
 
@@ -36,14 +28,9 @@ void print_help_and_exit()
     raw("       Options:\n");
     print_help_arguement(af_loglv);
     print_help_arguement(af_seed);
-    raw("       [CVRP]:\n");
-    print_help_arguement(af_apu);
-    print_help_arguement(af_apl);
-    raw("       [TSP]:\n");
     print_help_arguement(af_pop);
     print_help_arguement(af_svr);
     print_help_arguement(af_ncr);
-    print_help_arguement(af_mtf);
     set_leading_spaces(0);
 
     exit(1);
@@ -80,22 +67,6 @@ void parse_args(int argc, char *argv[])
         else if (next_arg_matches(af_ncr))
         {
             set_newcomer_rate(parse_float(next_arg()));
-        }
-        else if (next_arg_matches(af_mtf))
-        {
-            set_mutation_rate(parse_float(next_arg()));
-        }
-        else if (next_arg_matches(af_cgf))
-        {
-            set_converge_factor(parse_long(next_arg()));
-        }
-        else if (next_arg_matches(af_apu))
-        {
-            set_apply_rate_ub(parse_float(next_arg()));
-        }
-        else if (next_arg_matches(af_apl))
-        {
-            set_apply_rate_lb(parse_float(next_arg()));
         }
         else
         {
@@ -146,7 +117,7 @@ int main(int argc, char *argv[])
 
     //parse input file into arrays
     specification *spec;
-    parse_input(INPUT_FILE, TSP_MODE, &spec);
+    parse_input(INPUT_FILE, &spec);
     spec->start_time_us = start_time;
 
     //go GA setups

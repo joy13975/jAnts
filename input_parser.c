@@ -9,7 +9,6 @@
 typedef enum { UNSET, COORD_MODE, DEMAND_MODE } read_mode;
 
 void parse_input(const char* input_file,
-                 bool tsp_mode,
                  specification **spec_ptr)
 {
     msg("Parsing input: %s\n", input_file)

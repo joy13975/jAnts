@@ -11,11 +11,8 @@
 #define DEATH_TIME                  (30 * 60 * 1e6) //30 minutes in microseconds
 #define DEFAULT_RAND_SEED           0xdeadbeef
 
-#if TSP_MODE == 1
-#define DEFAULT_POP_SIZE            10000
-#else
 #define DEFAULT_POP_SIZE            100
-#endif
+#define DEFAULT_MC_DECSEND          1
 
 #define PROBABILITY_PRECISION       100000
 
@@ -39,6 +36,7 @@ float mutation_rate                 = DEFAULT_MUTATION_RATE;
 int converge_factor                 = DEFAULT_CONVERGE_FACTOR;
 float apply_rate_ub                 = DEFAULT_APPLY_RATE_UB;
 float apply_rate_lb                 = DEFAULT_APPLY_RATE_LB;
+int mc_descend                      = DEFAULT_MC_DECSEND;
 
 bool initialised                    = false;
 specification *spec;
@@ -64,13 +62,13 @@ typedef struct
 } cvrp_state;
 
 float **distm;
-cw_saving *savings;
-int curr_savings_idx = 0;
-cvrp_state *curr_cvrp;
+cw_saving *glob_savings;
+int glob_savings_idx = 0;
+cvrp_state *glob_cvrp;
 
 
 //function declarations
-inline float monte_carlo_sim(cvrp_state *cvrp, unsigned *t_seed_ptr);
+float monte_carlo_sim(cvrp_state *cvrp, long prev_savings_idx, unsigned *t_seed_ptr, int lvls);
 inline void calc_cvrp_cost(cvrp_state *cvrp, float *cost_ptr, int *vehicles_ptr, bool print);
 inline void clone_cvrp(cvrp_state *src, cvrp_state **dst_ptr);
 inline void use_arc(cvrp_state *cvrp, int src, int dst);
@@ -106,7 +104,10 @@ void set_apply_rate_ub(float value);
 void set_apply_rate_lb(float value);
 
 //function definitions
-inline float monte_carlo_sim(cvrp_state *cvrp, unsigned *t_seed_ptr)
+float monte_carlo_sim(cvrp_state *prev_cvrp,
+                      long prev_savings_idx,
+                      unsigned *t_seed_ptr,
+                      int lvls)
 {
     //determine saving apply rate
     const float prob_range = apply_rate_ub - apply_rate_lb;
@@ -114,28 +115,90 @@ inline float monte_carlo_sim(cvrp_state *cvrp, unsigned *t_seed_ptr)
                              (prob_range *
                               (rand_r(t_seed_ptr) % (PROBABILITY_PRECISION + 1)) /
                               PROBABILITY_PRECISION);
+    prf("Decsend level #%d\n", mc_descend - lvls);
 
-    long t_curr_savings_idx = curr_savings_idx + 1;
+    bool apply_saving;
+    float sum_costs_nsa, sum_costs_sa;
+    cvrp_state *curr_cvrp;
+    clone_cvrp(prev_cvrp, &curr_cvrp);
+    long t_curr_savings_idx = prev_savings_idx + 1;
+
+    bool break_outer = false;
+
     while (true)
     {
-
         //do some checks
-        if (savings[t_curr_savings_idx].saving <= 0)
+        if (glob_savings[t_curr_savings_idx].saving <= 0)
+        {
+            dbg("Algorithm stopping due to a lack of positive savings at #%d\n",
+                t_curr_savings_idx);
             break;
+        }
 
         while (t_curr_savings_idx < spec->n_savings &&
-                !is_saving_feasible(cvrp, t_curr_savings_idx))
+                !is_saving_feasible(curr_cvrp, t_curr_savings_idx))
+        {
             t_curr_savings_idx++;
-
-        if (t_curr_savings_idx >= spec->n_savings - 1)
+            if (glob_savings[t_curr_savings_idx].saving <= 0)
+            {
+                dbg("Algorithm stopping due to a lack of positive savings at #%d\n",
+                    t_curr_savings_idx);
+                break_outer = true;
+            }
+        }
+        if (break_outer)
             break;
 
-        bool apply_saving = (rand_r(t_seed_ptr) % (PROBABILITY_PRECISION + 1)) <
-                            (apply_rate * PROBABILITY_PRECISION);
-        if (apply_saving)
+        if (t_curr_savings_idx >= spec->n_savings - 1)
         {
-            cw_saving cws = savings[t_curr_savings_idx];
-            use_arc(cvrp, cws.src, cws.dst);
+            dbg("Algorithm stopping due to a lack of feasible savings at #%d\n",
+                t_curr_savings_idx);
+            break;
+        }
+
+        sum_costs_nsa   = 0;
+        sum_costs_sa    = 0;
+
+        if (lvls > 0)
+        {
+            //create new cvrp and apply saving
+            cvrp_state *nsa_cvrp, *sa_cvrp;
+            clone_cvrp(curr_cvrp, &nsa_cvrp);
+            clone_cvrp(curr_cvrp, &sa_cvrp);
+
+            cw_saving cws = glob_savings[t_curr_savings_idx];
+            use_arc(sa_cvrp, cws.src, cws.dst);
+
+            //do monte carlo simulation for original cvrp
+            for (int i = 0; i < pop_size; i++)
+                sum_costs_nsa += monte_carlo_sim(nsa_cvrp,
+                                                 t_curr_savings_idx,
+                                                 t_seed_ptr,
+                                                 lvls - 1);
+
+            //do monte carlo simulation for saving-applied cvrp
+            for (int i = 0; i < pop_size; i++)
+                sum_costs_sa += monte_carlo_sim(sa_cvrp,
+                                                t_curr_savings_idx,
+                                                t_seed_ptr,
+                                                lvls - 1);
+
+            apply_saving = sum_costs_sa < sum_costs_nsa;
+            if (apply_saving)
+                use_arc(curr_cvrp, cws.src, cws.dst);
+
+            destroy_cvrp(sa_cvrp);
+            destroy_cvrp(nsa_cvrp);
+        }
+        else
+        {
+            bool apply_saving = (rand_r(t_seed_ptr) % (PROBABILITY_PRECISION + 1)) <
+                                (apply_rate * PROBABILITY_PRECISION);
+            if (apply_saving)
+            {
+                cw_saving cws = glob_savings[t_curr_savings_idx];
+                use_arc(curr_cvrp, cws.src, cws.dst);
+            }
         }
 
         // #pragma omp barrier
@@ -149,8 +212,9 @@ inline float monte_carlo_sim(cvrp_state *cvrp, unsigned *t_seed_ptr)
         t_curr_savings_idx++;
     }
 
+    wrn("Halt: %d (lvl: %d)\n", t_curr_savings_idx, lvls);
     float cost;
-    calc_cvrp_cost(cvrp, &cost, NULL, false);
+    calc_cvrp_cost(curr_cvrp, &cost, NULL, false);
     return cost;
 }
 
@@ -304,7 +368,7 @@ inline void accumulate_demand(cvrp_state *cvrp, int src, int *demand_ptr, int *e
 
 inline bool is_saving_feasible(cvrp_state *cvrp, int idx)
 {
-    const int src = savings[idx].src, dst = savings[idx].dst;
+    const int src = glob_savings[idx].src, dst = glob_savings[idx].dst;
     const int src_0idx = cvrp->adjm[src][0] ? (cvrp->adjm[src][1] ? -1 : 1) : 0;
     const int dst_0idx = cvrp->adjm[dst][0] ? (cvrp->adjm[dst][1] ? -1 : 1) : 0;
 
@@ -370,33 +434,43 @@ void run_cvrp()
             #pragma omp single
             {
                 //do some checks
-                if (savings[curr_savings_idx].saving <= 0)
+                if (glob_savings[glob_savings_idx].saving <= 0)
                 {
                     wrn("Algorithm stopping due to a lack of positive savings at #%d\n",
-                    curr_savings_idx);
+                    glob_savings_idx);
                     should_break = true;
                 }
                 else
                 {
-                    while (curr_savings_idx < spec->n_savings &&
-                    !is_saving_feasible(curr_cvrp, curr_savings_idx))
-                        curr_savings_idx++;
-
-                    if (curr_savings_idx >= spec->n_savings - 1)
+                    while (glob_savings_idx < spec->n_savings &&
+                    !is_saving_feasible(glob_cvrp, glob_savings_idx))
                     {
-                        wrn("Algorithm stopping due to a lack of feasible savings at #%d\n",
-                        curr_savings_idx);
-                        should_break = true;
+                        glob_savings_idx++;
+                        if (glob_savings[glob_savings_idx].saving <= 0)
+                        {
+                            wrn("Algorithm stopping due to a lack of positive savings at #%d\n",
+                            glob_savings_idx);
+                            should_break = true;
+                        }
                     }
-                    else
+                    if (!should_break)
                     {
-                        if (curr_savings_idx > 0)
-                            MV_CURSOR_UP(print_lines);
+                        if (glob_savings_idx >= spec->n_savings - 1)
+                        {
+                            wrn("Algorithm stopping due to a lack of feasible savings at #%d\n",
+                                glob_savings_idx);
+                            should_break = true;
+                        }
+                        else
+                        {
+                            if (glob_savings_idx > 0)
+                                MV_CURSOR_UP(print_lines);
 
-                        //do the prints
-                        cw_saving s = savings[curr_savings_idx];
-                        ERASE_LINE(); raw("Next feasible saving #%d: %d -> %d ... %.2f\n",
-                        curr_savings_idx, s.src, s.dst, s.saving);
+                            //do the prints
+                            cw_saving s = glob_savings[glob_savings_idx];
+                            ERASE_LINE(); raw("Next feasible saving #%d: %d -> %d ... %.2f\n",
+                                              glob_savings_idx, s.src, s.dst, s.saving);
+                        }
                     }
                 }
 
@@ -409,33 +483,39 @@ void run_cvrp()
 
             //create new cvrp (per thread) and apply saving
             cvrp_state *nsa_cvrp, *sa_cvrp;
-            clone_cvrp(curr_cvrp, &nsa_cvrp);
-            clone_cvrp(curr_cvrp, &sa_cvrp);
+            clone_cvrp(glob_cvrp, &nsa_cvrp);
+            clone_cvrp(glob_cvrp, &sa_cvrp);
 
-            cw_saving cws = savings[curr_savings_idx];
+            cw_saving cws = glob_savings[glob_savings_idx];
             use_arc(sa_cvrp, cws.src, cws.dst);
 
             //do monte carlo simulation for original cvrp
             #pragma omp for reduction(+:sum_costs_nsa)
             for (int i = 0; i < pop_size; i++)
-                sum_costs_nsa += monte_carlo_sim(nsa_cvrp, &t_seed);
+                sum_costs_nsa += monte_carlo_sim(nsa_cvrp,
+                                                 glob_savings_idx,
+                                                 &t_seed,
+                                                 mc_descend - 1);
 
 
             //do monte carlo simulation for saving-applied cvrp
             #pragma omp for reduction(+:sum_costs_sa)
             for (int i = 0; i < pop_size; i++)
-                sum_costs_sa += monte_carlo_sim(sa_cvrp, &t_seed);
+                sum_costs_sa += monte_carlo_sim(sa_cvrp,
+                                                glob_savings_idx,
+                                                &t_seed,
+                                                mc_descend - 1);
 
             #pragma omp single
             {
                 apply_saving = sum_costs_sa < sum_costs_nsa;
                 if (apply_saving)
-                    use_arc(curr_cvrp, cws.src, cws.dst);
+                    use_arc(glob_cvrp, cws.src, cws.dst);
 
                 ERASE_LINE(); raw("Simulation result: %s\n", apply_saving ? "apply" : "skip");
                 ERASE_LINE(); raw("Cost comparison: %.2f%%\n", 100 * sum_costs_sa / sum_costs_nsa);
-                ERASE_LINE(); raw("Current cost: %.2f\n", curr_cvrp->cost);
-                curr_savings_idx++;
+                ERASE_LINE(); raw("Current cost: %.2f\n", glob_cvrp->cost);
+                glob_savings_idx++;
             }
 
             destroy_cvrp(sa_cvrp);
@@ -448,7 +528,7 @@ void run_cvrp()
     }
 
     print_best_solution();
-    destroy_cvrp(curr_cvrp);
+    destroy_cvrp(glob_cvrp);
 }
 
 
@@ -757,7 +837,7 @@ void print_best_solution()
     raw("\n");
 #else
     int vehicles;
-    calc_cvrp_cost(curr_cvrp, &best_cost, &vehicles, true);
+    calc_cvrp_cost(glob_cvrp, &best_cost, &vehicles, true);
     ERASE_LINE(); raw("Best route has cost %.2f using %d trucks\n",
                       best_cost, vehicles);
 #endif
@@ -776,17 +856,17 @@ void init_cvrp()
     msg("Creating initial state...\n");
 
     //initialise adjacent "map"
-    curr_cvrp = calloc(1, sizeof(*curr_cvrp));
-    curr_cvrp->adjm = calloc(spec->n_nodes, sizeof(*(curr_cvrp->adjm)));
+    glob_cvrp = calloc(1, sizeof(*glob_cvrp));
+    glob_cvrp->adjm = calloc(spec->n_nodes, sizeof(*(glob_cvrp->adjm)));
     for (int i = 0; i < spec->n_nodes; i++)
-        curr_cvrp->adjm[i] = calloc(2, sizeof(**(curr_cvrp->adjm))); //each node must always connect to 2 other nodes
+        glob_cvrp->adjm[i] = calloc(2, sizeof(**(glob_cvrp->adjm))); //each node must always connect to 2 other nodes
 
     //initially, node 0 connects to all customer nodes
     //all customer nodes also connect back to node 0
     for (int i = 1; i < spec->n_nodes; i++)
     {
-        use_arc(curr_cvrp, 0, i);
-        use_arc(curr_cvrp, i, 0);
+        use_arc(glob_cvrp, 0, i);
+        use_arc(glob_cvrp, i, 0);
     }
 
 #if TEST_COST == 1
@@ -796,7 +876,7 @@ void init_cvrp()
     float cvrp_test_cost;
     int cvrp_test_vehicles;
 
-    calc_cvrp_cost(curr_cvrp, &cvrp_test_cost, &cvrp_test_vehicles, false);
+    calc_cvrp_cost(glob_cvrp, &cvrp_test_cost, &cvrp_test_vehicles, false);
     float cvrp_test_diff = cvrp_test_cost - cvrp_test_correct_cost;
     msg("calc_cvrp_cost() test: %.2f (actual=%.2f, diff=%.2f)", cvrp_test_cost, cvrp_test_correct_cost, cvrp_test_diff);
     if (abs(cvrp_test_diff) > 0.01 ||
@@ -811,8 +891,8 @@ void init_cvrp()
         raw(" - OK \n");
     }
 
-    cvrp_test_diff = curr_cvrp->cost - cvrp_test_correct_cost;
-    msg("cvrp.cost test: %.2f (actual=%.2f, diff=%.2f)", cvrp_test_cost, curr_cvrp->cost, cvrp_test_diff);
+    cvrp_test_diff = glob_cvrp->cost - cvrp_test_correct_cost;
+    msg("cvrp.cost test: %.2f (actual=%.2f, diff=%.2f)", cvrp_test_cost, glob_cvrp->cost, cvrp_test_diff);
     if (abs(cvrp_test_diff) > 0.01 ||
             isnan(cvrp_test_cost) ||
             isinf(cvrp_test_cost))
@@ -826,10 +906,10 @@ void init_cvrp()
     }
 #endif
 
-    msg("Worst possible cost: %.2f\n", curr_cvrp->cost);
+    msg("Worst possible cost: %.2f\n", glob_cvrp->cost);
 
     //compute savings
-    savings = calloc(spec->n_savings, sizeof(*(savings)));
+    glob_savings = calloc(spec->n_savings, sizeof(*(glob_savings)));
     for (int i = 1, sid = 0; i < spec->n_nodes; i++)
     {
         for (int j = 1; j < spec->n_nodes; j++)
@@ -837,9 +917,9 @@ void init_cvrp()
             if (i != j)
             {
                 //if node i -> node j, then node j -x- node 0, node i -x- node 0
-                savings[sid].src = i;
-                savings[sid].dst = j;
-                savings[sid].saving = i == j ? 0 : (distm[i][0] + distm[0][j] - distm[i][j]);
+                glob_savings[sid].src = i;
+                glob_savings[sid].dst = j;
+                glob_savings[sid].saving = i == j ? 0 : (distm[i][0] + distm[0][j] - distm[i][j]);
 
                 sid++;
             }
@@ -850,7 +930,7 @@ void init_cvrp()
 
     for (int i = 0; i < spec->n_savings; i++)
     {
-        cw_saving s = savings[i];
+        cw_saving s = glob_savings[i];
         prf("Saving: %d -> %d = %.4f\n", s.src, s.dst, s.saving);
     }
 }
@@ -862,25 +942,25 @@ void sort_savings(const int l, const int r)
         return;
 
     //pick pivot
-    float pivot = savings[l].saving;
+    float pivot = glob_savings[l].saving;
     int nl = l, nr = r;
 
     while (nl <= nr) {
 
         //find inconsistent pair
-        while (nl < r && savings[nl].saving > pivot)
+        while (nl < r && glob_savings[nl].saving > pivot)
             nl++;
 
-        while (nr > l && savings[nr].saving < pivot)
+        while (nr > l && glob_savings[nr].saving < pivot)
             nr--;
 
         if (nl <= nr) {
-            if (savings[nl].saving != savings[nr].saving)
+            if (glob_savings[nl].saving != glob_savings[nr].saving)
             {
                 //swap
-                cw_saving tmp = savings[nl];
-                savings[nl] = savings[nr];
-                savings[nr] = tmp;
+                cw_saving tmp = glob_savings[nl];
+                glob_savings[nl] = glob_savings[nr];
+                glob_savings[nr] = tmp;
             }
 
             nl++;
