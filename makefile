@@ -9,7 +9,7 @@ all: $(EXE)
 %.o: %.c %.h
 	$(COMPILE) -c $^
 
-$(EXE): $(EXE).c input_parser.o util.o
+$(EXE): $(EXE).c input_parser.o util.o ga.o
 	$(COMPILE) $^ -o $@
 
 fresh: clean all

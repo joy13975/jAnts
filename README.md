@@ -1,2 +1,2 @@
-# jutil
-My generic utility library 
+# JTruck
+Autonomous Learning Coursework to solve CVRP
