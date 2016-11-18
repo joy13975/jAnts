@@ -1,0 +1,3 @@
+#!/bin/tcsh
+make fresh
+make run_real

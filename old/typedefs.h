@@ -1,5 +1,5 @@
-#ifndef _JSOLVE_TYPES_H
-#define _JSOLVE_TYPES_H
+#ifndef _TYPEDEFS_H
+#define _TYPEDEFS_H
 
 typedef struct node
 {

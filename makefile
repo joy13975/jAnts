@@ -1,8 +1,9 @@
-EXE=jsolve
+EXE=jtruck
 CC=gcc
 CFLAGS=-O3 -fopenmp
 DEFS=
 COMPILE=$(CC) $(CFLAGS) $(DEFS)
+RUN_REAL_ARGS=
 
 all: $(EXE)
 
@@ -22,6 +23,9 @@ copyutil: util.h util.c
 	cp util.c ~/src/jproc
 	cp util.h ~/src/jutil
 	cp util.c ~/src/jutil
+
+run_real: $(EXE)
+	./$(EXE) $(RUN_REAL_ARGS)
 
 PHONY: clean
 

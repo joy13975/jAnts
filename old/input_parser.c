@@ -42,6 +42,8 @@ void parse_input(const char* input_file,
                     mode = COORD_MODE;
                 else if (!strcmp(line_buffer, "DEMAND_SECTION\n"))
                     mode = DEMAND_MODE;
+                else
+                    die("Unknown section string: \"%s\"\n", line_buffer);
 
                 if (mode == UNSET)
                 {
@@ -59,14 +61,18 @@ void parse_input(const char* input_file,
                 {
                     int x, y;
                     sscanf(line_buffer, "%d %d %d", &idx, &x, &y);
-                    spec->nodes[idx-1].x = x;
-                    spec->nodes[idx-1].y = y;
+                    if (idx < 1 || idx > spec->n_nodes)
+                        die("Node index %d is out of range (1-%d)\n", idx, spec->n_nodes);
+                    spec->nodes[idx - 1].x = x;
+                    spec->nodes[idx - 1].y = y;
                 }
                 else if (mode == DEMAND_MODE)
                 {
                     int demand;
                     sscanf(line_buffer, "%d %d", &idx, &demand);
-                    spec->nodes[idx].demand = demand;
+                    if (idx < 1 || idx > spec->n_nodes)
+                        die("Node index %d is out of range (1-%d)\n", idx, spec->n_nodes);
+                    spec->nodes[idx - 1].demand = demand;
                 }
 
                 if (lineno - mode_start_line >= spec->n_nodes)
