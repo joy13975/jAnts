@@ -1,6 +1,6 @@
 EXE=jtruck
 CC=g++
-CFLAGS=-MMD -std=c++11 -O3 -fopenmp
+CFLAGS=-MMD -std=c++11 -O3 -fopenmp -g3
 DEFS=
 COMPILE=$(CC) $(CFLAGS) $(DEFS)
 RUN_REAL_ARGS=
@@ -8,8 +8,8 @@ RUN_REAL_ARGS=
 SRC_DIR:=src
 OBJ_DIR=.obj
 $(shell mkdir -p $(OBJ_DIR))
-C_SRC := jtruck.c input_parser.c util.c
-CC_SRC:=
+C_SRC := jtruck.c util.c
+CC_SRC:= spec.cc route.cc solution.cc input_parser.cc jrand.cc score.cc basic_random_search.cc output_writer.cc
 OBJS := $(C_SRC:%.c=$(OBJ_DIR)/%.o) $(CC_SRC:%.cc=$(OBJ_DIR)/%.o)
 DEPS := $(C_SRC:%.c=$(OBJ_DIR)/%.d) $(CC_SRC:%.cc=$(OBJ_DIR)/%.d)
 

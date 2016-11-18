@@ -76,7 +76,7 @@ bool next_arg_matches(const argument_format af);
 void init_args(int argc, char *argv[]);
 void _log(const char *filename, const int line, const Log_Level lvl, const char *fmt, ...);
 
-#define min(a, b)                   (a < b ? a : b)
+#define jmin(a, b)                   (a < b ? a : b)
 
 #define CLEAR_TERM()                raw("\033[H\033[J")
 #define MV_CURSOR_UP(lines)         raw("\033[%dA", lines)

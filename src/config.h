@@ -9,4 +9,6 @@
 
 #define DEFAULT_INPUT_FILE          "res/fruitybun250.vrp"
 
+#define DEFAULT_OUTPUT_FILE         "best-solution.txt"
+
 #endif /* include guard */

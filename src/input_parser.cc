@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "input_parser.h"
 #include "util.h"
@@ -8,17 +9,17 @@
 #define BUFFER_SIZE 256
 typedef enum { UNSET, COORD_MODE, DEMAND_MODE } read_mode;
 
-void parse_input(const char* input_file,
-                 CVRP_Spec **spec_ptr)
+void parse_input(const String input_file,
+                 Spec& spec)
 {
-    msg("Parsing input: %s\n", input_file);
+    msg("Parsing input from file \"%s\"\n", input_file.c_str());
     FILE *fp;
-    if (!(fp = fopen(input_file, "r")))
-        die("Can't open input file \"%s\" (%s)\n", input_file, get_error_string());
+    if (!(fp = fopen(input_file.c_str(), "r")))
+        die("Can't open input file \"%s\" (%s)\n", input_file.c_str(), get_error_string());
 
-    CVRP_Spec *spec = (CVRP_Spec*) calloc(1, sizeof(CVRP_Spec));
     read_mode mode = UNSET;
     int mode_start_line = -1;
+    Nodes nodes;
 
     char line_buffer[BUFFER_SIZE] = {0};
     for (int lineno = 0; fgets(line_buffer, BUFFER_SIZE, fp); lineno++)
@@ -26,13 +27,18 @@ void parse_input(const char* input_file,
         if (lineno == 0)
         {
             //first line is the number of nodes
-            sscanf(line_buffer, "DIMENSION : %d", &(spec->n_nodes));
-            spec->nodes = (Node*) calloc(spec->n_nodes, sizeof(*(spec->nodes)));
-            spec->n_savings = spec->n_nodes * spec->n_nodes;
+            int dim;
+            sscanf(line_buffer, "DIMENSION : %d", &dim);
+            spec.setDim(dim);
+
+            for (int i = 0; i < dim; i++)
+                nodes.push_back(Node(0, 0, 0));
         }
         else if (lineno == 1)
         {
-            sscanf(line_buffer, "CAPACITY : %d", &(spec->capacity));
+            int capacity;
+            sscanf(line_buffer, "CAPACITY : %d", &(capacity));
+            spec.setVCap(capacity);
         }
         else
         {
@@ -61,33 +67,34 @@ void parse_input(const char* input_file,
                 {
                     int x, y;
                     sscanf(line_buffer, "%d %d %d", &idx, &x, &y);
-                    if (idx < 1 || idx > spec->n_nodes)
-                        die("Node index %d is out of range (1-%d)\n", idx, spec->n_nodes);
-                    spec->nodes[idx - 1].x = x;
-                    spec->nodes[idx - 1].y = y;
+                    if (idx < 1 || idx > spec.getDim())
+                        die("Node index %d is out of range (1-%d)\n", idx, spec.getDim());
+                    nodes[idx - 1].x = x;
+                    nodes[idx - 1].y = y;
                 }
                 else if (mode == DEMAND_MODE)
                 {
                     int demand;
                     sscanf(line_buffer, "%d %d", &idx, &demand);
-                    if (idx < 1 || idx > spec->n_nodes)
-                        die("Node index %d is out of range (1-%d)\n", idx, spec->n_nodes);
-                    spec->nodes[idx - 1].demand = demand;
+                    if (idx < 1 || idx > spec.getDim())
+                        die("Node index %d is out of range (1-%d)\n", idx, spec.getDim());
+                    nodes[idx - 1].z = demand;
                 }
 
-                if (lineno - mode_start_line >= spec->n_nodes)
+                if (lineno - mode_start_line >= spec.getDim())
                     mode = UNSET;
             }
         }
     }
 
-    *spec_ptr = spec;
+    spec.setNodes(nodes);
 
-    msg("Number of nodes: %d\n", spec->n_nodes);
+    msg("Number of nodes: %d\n", spec.getDim());
 
-    for (int i = 0; i < spec->n_nodes; i++)
+    for (int i = 0; i < spec.getDim(); i++)
     {
-        Node n = spec->nodes[i];
-        prf("Node #%d: (%d, %d) -> %d\n", i + 1, n.x, n.y, n.demand);
+
+        Node n = nodes[i];
+        prf("Node #%d: (%d, %d) -> %d\n", i + 1, n.x, n.y, n.z);
     }
 }

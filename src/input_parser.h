@@ -3,8 +3,9 @@
 
 #include <stdbool.h>
 #include "typedefs.h"
+#include "spec.h"
 
-void parse_input(const char* input_file,
-                 CVRP_Spec **spec_ptr);
+void parse_input(const String input_file,
+                 Spec& spec);
 
 #endif /* include guard */

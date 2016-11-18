@@ -1,0 +1,3 @@
+#!/bin/bash
+cd res
+java -jar CVRPValidater.jar ../best-solution.txt $@
