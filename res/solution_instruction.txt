@@ -1,0 +1,9 @@
+best-solution.txt
+Put the best-ever valid solution your code finds in this file. It will be read by a script so you must follow the format exactly. It must be an ASCII text file. Line 1 must say "login ", then your UoB username, then your candidate number (which you can find in your submission folder). Line 2 must say "name " then your name. Line 3 must say "algorithm " then a description of your algorithm of at most 100 characters. It's enough to identify the general type of algorithm (genetic algorithm, hillclimbing, random search ...). Line 4 shows the cost of the solution, which you can round off to 3 decimal places. (There will be a penalty if the cost you report does not match the cost computed by the marking program to within 0.01.) The following lines must show the solution, with the route of each truck on a separate line in the format 1->5->10->1, where 1 is the depot. Here's an incomplete example file showing 2 trucks:
+
+login xy1234 13851
+name John Zoidberg
+algorithm Genetic Algorithm with specialized crossover and mutation
+cost 3108.323
+1->5->10->1
+1->15->23->45->7->1

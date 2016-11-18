@@ -1,0 +1,16 @@
+Submit a 1-page poster in PDF format named poster-xxxxxx.pdf where xxxxxx is your login name. Put a title and your name at the top. There is not a lot of space available on a poster so the challenge is to choose what to include and what not to include. You should focus on what is likely to be novel and interesting to the reader. So, for example, do not explain what a genetic algorithm is, but if you have used an usual crossover operator do explain it briefly. (As a rule of thumb: if a concept is explained in the lecture slides then you don't need to explain it.) There are two styles of poster. The first relies on someone to stand in front of it and explain it, whereas the second is mean to be self-explanatory and so tends to have more text. You should make the second kind. There are many posters of the second kind on the 3rd floor of MVB that you may want to look at for inspiration.
+
+Include the following information:
+
+Why you chose the algorithm.
+Where you got the algorithm (you invented it, modified it, found it in a journal paper, on a web page...). Cite your sources.
+Briefly explain the representation, operators, fitness function or any other significant details if they are not covered in the handouts.
+List any parameter settings you used to generate any results you are showing.
+Anything else you want to include.
+You may want to use the following, but they're just ideas. You do NOT need to use them all.
+
+Pseudocode
+Diagrams (e.g., to show how an operator or algorithm works)
+Best-so-far plots during the learning run
+Plots of solutions
+You will not have to present your poster. Just submit it in SAFE.
