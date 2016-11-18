@@ -2,7 +2,7 @@
 
 #include "score.h"
 
-float score(const Node& p1, const Node& p2)
+float realScore(const Node& p1, const Node& p2)
 {
     //sqrt of fastScore
     return sqrt(fastScore(p1, p2));

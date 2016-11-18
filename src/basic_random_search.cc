@@ -1,8 +1,11 @@
 #include <limits>
+#include <sstream>
+#include <iomanip>
 
 #include "basic_random_search.h"
 #include "util.h"
 #include "jrand.h"
+#include "output_writer.h"
 
 Route basicRandomSearch(const Spec& spec, const long n)
 {
@@ -10,6 +13,9 @@ Route basicRandomSearch(const Spec& spec, const long n)
     float bestScore = std::numeric_limits<float>::max();
     const int dim = spec.getDim();
 
+    std::stringstream ss;
+
+    #pragma omp parallel for
     for (int i = 0; i < n; i++)
     {
         //generate a random route
@@ -18,16 +24,20 @@ Route basicRandomSearch(const Spec& spec, const long n)
         //evaluate route
         float myScore = r.calcScore();
 
-        //better than best?
-        if (myScore < bestScore)
+        #pragma omp critical
         {
-            bestScore = myScore;
-            bestRoute = r;
-        }
+            //better than best?
+            if (myScore < bestScore)
+            {
+                bestScore = myScore;
+                bestRoute = r;
+            }
 
-        //output best score
-        msg("Route #%d: %.2f (best=%.2f) (end=%d)\n", i + 1, myScore, bestScore, r.getHops()[dim - 2]);
+            ss << i << " " << std::fixed << std::setprecision(4) << bestScore << "\n";
+        }
     }
+
+    write_general("data.txt", ss);
 
     return bestRoute;
 }

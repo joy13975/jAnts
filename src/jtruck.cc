@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
         die("Unknown search mode: %s", Search_Mode_String[search_mode]);
     }
 
-    msg("Best cost: %.2f\n", bestRoute.getScore());
+    msg("Best cost: %.2f\n", bestRoute.getScoreLazy());
 
     write_output(output_file, bestRoute);
 

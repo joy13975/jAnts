@@ -9,17 +9,23 @@ using namespace std;
 
 void write_output(const String output_file, const Route& bestRoute)
 {
-    msg("Writing best solution to file \"%s\"\n", output_file.c_str());
+    std::stringstream ss;
+    //write file header
+    ss << "login cy13308 67678\n";
+    ss << "name Joy Yeh\n";
+    ss << "algorithm Tabu search with Clark & Wright's savings heuristic\n";
+    ss << "cost " << std::fixed  << std::setprecision(16) << bestRoute.getScoreSerious() << "\n";
+    ss << bestRoute.genStr();
+
+    write_general(output_file, ss);
+}
+
+
+void write_general(const String output_file, const std::stringstream& ss)
+{
     ofstream os(output_file);
     if (!os.is_open())
-        die("Can't open output file \"%s\" (%s)\n", output_file.c_str(), get_error_string());
-
-    //write file header
-    os << "login cy13308 67678\n";
-    os << "name Joy Yeh\n";
-    os << "algorithm Tabu search with Clark & Wright's savings heuristic\n";
-    os << "cost " << std::setprecision(16) << bestRoute.getScore() << "\n";
-    os << bestRoute.genStr();
-
+        die("Can't open file \"%s\" (%s)\n", output_file.c_str(), get_error_string());
+    os << ss.rdbuf();
     os.close();
 }

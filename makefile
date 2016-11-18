@@ -31,6 +31,7 @@ fresh: clean all
 
 test: $(EXE)
 	./$(EXE) $(ARGS)
+	./validate
 
 run_real: $(EXE)
 	./$(EXE) $(RUN_REAL_ARGS)

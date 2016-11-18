@@ -21,7 +21,7 @@ public:
     float calcScore();
     float calcFastScore();
     float getScoreLazy();
-    float getScore() const;
+    double getScoreSerious() const;
 
 private:
     const Spec *mySpec;
