@@ -6,6 +6,7 @@
 
 //c++ shorthands
 typedef std::vector<int> Ints;
+typedef std::vector<float> Floats;
 typedef std::string String;
 
 #endif /* include guard */

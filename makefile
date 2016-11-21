@@ -9,7 +9,9 @@ SRC_DIR:=src
 OBJ_DIR=.obj
 $(shell mkdir -p $(OBJ_DIR))
 C_SRC := jtruck.c util.c
-CC_SRC:= spec.cc route.cc solution.cc input_parser.cc jrand.cc score.cc basic_random_search.cc output_writer.cc
+CC_SRC:= spec.cc route.cc solution.cc input_parser.cc \
+	jrng.cc score.cc basic_random.cc output_writer.cc \
+	savings.cc ants.cc
 OBJS := $(C_SRC:%.c=$(OBJ_DIR)/%.o) $(CC_SRC:%.cc=$(OBJ_DIR)/%.o)
 DEPS := $(C_SRC:%.c=$(OBJ_DIR)/%.d) $(CC_SRC:%.cc=$(OBJ_DIR)/%.d)
 

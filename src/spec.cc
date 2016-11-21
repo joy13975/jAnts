@@ -1,7 +1,15 @@
+#include <cstdlib>
+
 #include "spec.h"
 #include "util.h"
 
-const Nodes Spec::getNodes() const
+Spec::Spec(const int _rand_seed)
+    : rand_seed(_rand_seed)
+{
+    std::srand(this->rand_seed);
+}
+
+const Nodes& Spec::getNodes() const
 {
     return this->nodes;
 }

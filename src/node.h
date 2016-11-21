@@ -6,6 +6,7 @@
 #include "jints.h"
 
 typedef Int3 Node;
+
 typedef std::vector<Node> Nodes;
 
 #endif /* include guard */

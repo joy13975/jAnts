@@ -7,21 +7,21 @@
 
 using namespace std;
 
-void write_output(const String output_file, const Route& bestRoute)
+void write_solution(const String output_file, const Route& bestRoute)
 {
     std::stringstream ss;
     //write file header
     ss << "login cy13308 67678\n";
     ss << "name Joy Yeh\n";
     ss << "algorithm Tabu search with Clark & Wright's savings heuristic\n";
-    ss << "cost " << std::fixed  << std::setprecision(16) << bestRoute.getScoreSerious() << "\n";
+    ss << "cost " << std::fixed  << std::setprecision(16) << bestRoute.calcScoreSerious() << "\n";
     ss << bestRoute.genStr();
 
-    write_general(output_file, ss);
+    write_ss(output_file, ss);
 }
 
 
-void write_general(const String output_file, const std::stringstream& ss)
+void write_ss(const String output_file, const std::stringstream& ss)
 {
     ofstream os(output_file);
     if (!os.is_open())

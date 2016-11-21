@@ -4,100 +4,53 @@
 
 #include "util.h"
 #include "route.h"
-#include "score.h"
+#include "jrng.h"
 
-double Route::getScoreSerious() const
+double Route::calcScoreSerious() const
 {
-    //use double because validator uses double... the error can cost 2% mark
-    const int dim = this->mySpec->getDim();
+    return scoreWithFunc(Score::serious);
+}
+
+float Route::calcRealScore() const
+{
+    return scoreWithFunc(Score::real);
+}
+
+float Route::calcFastScore() const
+{
+    return scoreWithFunc(Score::fast);
+}
+
+bool Route::isDummy()
+{
+    return this->dummy;
+}
+
+void Route::insertDepots()
+{
+    const Nodes& nodes = this->mySpec->getNodes();
     const int vcap = this->mySpec->getVCap();
 
-    Node depot = mySpec->getNodes()[0];
-    Node node1 = mySpec->getNodes()[this->myHops[0]];
+    // insert depot as first hop
+    this->myHops.insert(this->myHops.begin(), 0);
 
-    double score = realScore(depot, node1);
-    int load = node1.z;
-    for (int i = 1; i < dim - 1; i++)
+    int load = 0;
+    for (int i = 1; i < this->myHops.size(); i++)
     {
-        const Node& prevNode = mySpec->getNodes()[this->myHops[i - 1]];
         const Node& currNode = mySpec->getNodes()[this->myHops[i]];
 
-        //if overload on current node, go to node 1 and offload
-        if (load + currNode.z > vcap)
-        {
-            score += realScore(prevNode, depot);
-
-            //offload
-            load = 0;
-        }
-
-        //if new vehicle, start from node 1
-        const int newPrevNodeId = load == 0 ? 0 : this->myHops[i - 1];
-        const Node& newPrevNode = mySpec->getNodes()[newPrevNodeId];
-
-        score += realScore(newPrevNode, currNode);
+        // if overload on current node, go to node 1 and offload
         load += currNode.z;
+        if (load > vcap)
+        {
+            load = currNode.z;
+            this->myHops.insert(this->myHops.begin() + i, 0);
+        }
+        const int currId = this->myHops[i];
     }
 
-    //last vehicle must go back to node1
-    const Node& lastNode = mySpec->getNodes()[this->myHops[dim - 2]];
-    score += realScore(lastNode, depot);
-
-    return score;
-}
-
-float Route::getScoreLazy()
-{
-    return std::isinf(this->myScore) ? calcScore() : this->myScore;
-}
-
-inline float Route::scoreWithFunc(float (*scoreFunc)(const Node&, const Node&)) const
-{
-    const int dim = this->mySpec->getDim();
-    const int vcap = this->mySpec->getVCap();
-
-    Node depot = mySpec->getNodes()[0];
-    Node node1 = mySpec->getNodes()[this->myHops[0]];
-
-    float score = scoreFunc(depot, node1);
-    int load = node1.z;
-    for (int i = 1; i < dim - 1; i++)
-    {
-        const Node& prevNode = mySpec->getNodes()[this->myHops[i - 1]];
-        const Node& currNode = mySpec->getNodes()[this->myHops[i]];
-
-        //if overload on current node, go to node 1 and offload
-        if (load + currNode.z > vcap)
-        {
-            score += scoreFunc(prevNode, depot);
-
-            //offload
-            load = 0;
-        }
-
-        //if new vehicle, start from node 1
-        const int newPrevNodeId = load == 0 ? 0 : this->myHops[i - 1];
-        const Node& newPrevNode = mySpec->getNodes()[newPrevNodeId];
-
-        score += scoreFunc(newPrevNode, currNode);
-        load += currNode.z;
-    }
-
-    //last vehicle must go back to node1
-    const Node& lastNode = mySpec->getNodes()[this->myHops[dim - 2]];
-    score += scoreFunc(lastNode, depot);
-
-    return score;
-}
-
-float Route::calcScore()
-{
-    return (this->myScore = scoreWithFunc(realScore));
-}
-
-float Route::calcFastScore()
-{
-    return scoreWithFunc(fastScore);
+    // append depot as last hop
+    this->myHops.push_back(0);
 }
 
 Ints Route::genAscendHops()
@@ -116,26 +69,39 @@ Route::Route(const Spec& spec)
     : mySpec(&spec)
 {
     this->myHops = genAscendHops();
+    this->insertDepots();
 }
 
 //copy from existing hops
 Route::Route(const Spec& spec, const Ints& hops)
     : mySpec(&spec), myHops(hops)
-{}
+{
+    // Assume caller has prepared hops with depots
+    // this->insertDepots();
+}
 
 //initialise ascending and then randomise
-Route::Route(const Spec& spec, int (*rngFunc)(int))
+Route::Route(const Spec& spec, unsigned int& seed)
     : mySpec(&spec)
 {
     this->myHops = genAscendHops();
-    std::random_shuffle(this->myHops.begin(), this->myHops.end(), rngFunc);
+    jRNG::random_shuffle(seed, this->myHops.begin(), this->myHops.end());
+    this->insertDepots();
+}
+
+Route Route::Dummy()
+{
+    Route d = Route();
+    d.dummy = true;
+
+    return d;
 }
 
 Route& Route::operator=(Route other)
 {
     std::swap(mySpec, other.mySpec);
     std::swap(myHops, other.myHops);
-    std::swap(myScore, other.myScore);
+    std::swap(dummy, other.dummy);
     return *this;
 }
 
@@ -146,28 +112,17 @@ const Ints Route::getHops() const
 
 String Route::genStr() const
 {
-    const int dim = this->mySpec->getDim();
-    const int vcap = this->mySpec->getVCap();
+    const int N = this->myHops.size();
 
-    String outStr = "";
-    outStr += "1->" + std::to_string(this->myHops[0] + 1);
+    String outStr = "1";
 
-    Node node1 = mySpec->getNodes()[this->myHops[0]];
-    int load = node1.z;
-    for (int i = 1; i < dim - 1; i++)
+    const Node& node1 = mySpec->getNodes()[this->myHops[0]];
+    for (int i = 1; i < N - 1; i++)
     {
-        const Node& currNode = mySpec->getNodes()[this->myHops[i]];
-
-        //if overload on current node, go to node 1 and offload
-        if (load + currNode.z > vcap)
-        {
-            //offload
-            load = 0;
-            outStr += "->1\n1";
-        }
-
-        outStr += "->" + std::to_string(this->myHops[i] + 1);
-        load += currNode.z;
+        const int currId = this->myHops[i];
+        outStr += "->" + std::to_string(currId + 1);
+        if (currId == 0)
+            outStr += "\n1";
     }
 
     //last vehicle must go back to node1

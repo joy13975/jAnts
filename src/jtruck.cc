@@ -1,22 +1,26 @@
 #include <stdlib.h>
 #include <string.h>
+#include <sstream>
+#include <stdio.h>
+#include <unistd.h>
 
 #include "config.h"
 #include "typedefs.h"
 #include "util.h"
 #include "spec.h"
 #include "input_parser.h"
-#include "basic_random_search.h"
+#include "basic_random.h"
 #include "route.h"
 #include "output_writer.h"
+#include "ants.h"
 
 const argument_format af_help       = {"-h", "--help", 0, "Print help message"};
-const argument_format af_brand      = {"-br", "--basicrand", 1, "Do basic random search on N routes"};
+const argument_format af_brand      = {"-br", "--basicrand", 0, "Do basic random search"};
 const argument_format af_loglv      = {"-l", "--loglv", 1, "Set log level {0-6}"};
 const argument_format af_input      = {"-i", "--input", 1, "Set input file"};
 const argument_format af_output     = {"-o", "--output", 1, "Set output file"};
 const argument_format af_seed       = {"-r", "--seed", 1, "Set starting RNG seed"};
-// const argument_format af_pop        = {"-p", "--population", 1, "Set population size"};
+const argument_format af_pop        = {"-p", "--population", 1, "Set population size"};
 // const argument_format af_svr        = {"-s", "--survival_rate", 1, "Set ratio of survivors"};
 // const argument_format af_ncr        = {"-n", "--newcomer_rate", 1, "Set ratio of newcomers"};
 
@@ -27,12 +31,16 @@ const argument_format af_seed       = {"-r", "--seed", 1, "Set starting RNG seed
 
 DECL_ENUM_AND_STRING(Search_Mode, FOREACH_SEARCH_MODE);
 
-double start_time = -1;
-int rand_seed = 0xdeadbeef;
-String input_file = DEFAULT_INPUT_FILE;
-String output_file = DEFAULT_OUTPUT_FILE;
-Search_Mode search_mode = MODE_FULL;
-long search_size = 10000;
+int rand_seed                   = DEFAULT_RAND_SEED;
+double start_time               = -1;
+String input_file               = DEFAULT_INPUT_FILE;
+String output_file              = DEFAULT_OUTPUT_FILE;
+String data_output_file         = DEFAULT_DATA_OUTPUT_FILE;
+Search_Mode search_mode         = MODE_FULL;
+long population_size            = DEFAULT_POPULATION_SIZE;
+Route best_route                = Route::Dummy();
+int failure_count               = 0;
+std::stringstream data_stream;
 
 void print_help_and_exit()
 {
@@ -70,7 +78,6 @@ void parse_args(int argc, char *argv[])
         else if (next_arg_matches(af_brand))
         {
             search_mode = MODE_BRAND;
-            search_size = parse_long(next_arg());
         }
         else if (next_arg_matches(af_loglv))
         {
@@ -89,10 +96,10 @@ void parse_args(int argc, char *argv[])
         {
             rand_seed = parse_long(next_arg());
         }
-        // else if (next_arg_matches(af_pop))
-        // {
-        //     set_pop_size(parse_long(next_arg()));
-        // }
+        else if (next_arg_matches(af_pop))
+        {
+            population_size = parse_long(next_arg());
+        }
         // else if (next_arg_matches(af_svr))
         // {
         //     set_survival_rate(parse_float(next_arg()));
@@ -114,32 +121,52 @@ void parse_args(int argc, char *argv[])
     }
 }
 
-#include <stdio.h>
-void on_sigint(int sig)
+void finalise_and_exit(int default_sig)
 {
-    ERASE_LINE(); printf("\n");
-    ERASE_LINE(); printf("\n");
+    msg("Time: %.2f s\n", (get_timestamp_us() - start_time) / 1e6);
 
-    ERASE_LINE(); printf("[WARNING] Solver interrupted\n");
-    ERASE_LINE(); printf("[WARNING] Attempting to output latest results...\n");
+    if (best_route.isDummy())
+    {
+        msg("No route was computed!\n");
+        unlink(data_output_file.c_str());
+        unlink(output_file.c_str());
 
-    // if (is_ga_initialised())
-    // {
-    //     print_best_solution();
-    // }
-    // else
-    // {
-    //     printf("[WARNING] GA was not even initialised!\n");
-    // }
+        exit(1);
+    }
+    else
+    {
+        msg("Best cost: %.2f\n", best_route.calcScoreSerious());
 
-    printf("Time: %.2f s\n", (get_timestamp_us() - start_time) / 1e6);
-    exit(1);
+        write_ss(data_output_file, data_stream);
+        write_solution(output_file, best_route);
+
+        exit(default_sig);
+    }
+}
+
+void on_failure(int sig)
+{
+    failure_count++;
+
+    // if the follow block fails again, just exit
+    if (failure_count == 1)
+    {
+        ERASE_LINE(); printf("\n");
+
+        ERASE_LINE(); printf("[WARNING] Failure trap (%s)\n", strsignal(sig));
+        ERASE_LINE(); printf("[WARNING] Attempting to output latest results...\n");
+
+        finalise_and_exit(sig);
+    }
+
+    exit(sig);
 }
 
 int main(int argc, char *argv[])
 {
-    // if (signal(SIGINT, on_sigint) == SIG_ERR)
-    //     die("Couldn't hook signal handler\n");
+    if (signal(SIGINT, on_failure) == SIG_ERR ||
+            signal(SIGSEGV, on_failure) == SIG_ERR)
+        die("Couldn't hook signal handler\n");
 
     start_time = get_timestamp_us();
 
@@ -147,28 +174,27 @@ int main(int argc, char *argv[])
     parse_args(argc, argv);
 
     //parse input file
-    Spec spec;
+    Spec spec(rand_seed);
     parse_input(input_file, spec);
-
-    Route bestRoute = Route(spec);
 
     switch (search_mode)
     {
     case MODE_BRAND:
+    {
         msg("Running basic random search\n");
-        bestRoute = basicRandomSearch(spec, search_size);
+        BasicRandom::search(best_route, spec, population_size, data_stream);
         break;
+    }
     case MODE_FULL:
+    {
         msg("Running full search\n");
+        Ants a(spec, population_size, data_stream);
+        a.search(best_route);
         break;
+    }
     default:
         die("Unknown search mode: %s", Search_Mode_String[search_mode]);
     }
 
-    msg("Best cost: %.2f\n", bestRoute.getScoreLazy());
-
-    write_output(output_file, bestRoute);
-
-    msg("Time: %.2f s\n", (get_timestamp_us() - start_time) / 1e6);
-    return 0;
+    finalise_and_exit(0);
 }
