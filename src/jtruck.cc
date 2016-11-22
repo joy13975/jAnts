@@ -3,6 +3,7 @@
 #include <sstream>
 #include <stdio.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "config.h"
 #include "typedefs.h"

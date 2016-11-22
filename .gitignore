@@ -1,6 +1,7 @@
 *.o
 *.dSYM
 *.DS_STORE
+*.gch
 .obj
 jtruck
 data.txt

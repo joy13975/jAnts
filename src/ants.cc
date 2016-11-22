@@ -155,7 +155,6 @@ inline void Ants::applyChristofide(Ints& path)
 
 inline void Ants::improvePaths(Paths& paths)
 {
-    #pragma omp simd
     for (int i = 0; i < paths.size(); i++)
         applyChristofide(paths[i]);
 }
@@ -233,7 +232,6 @@ inline Ants::WayPoints Ants::applySavings(unsigned int& seed,
         Floats cmlProbs = Floats(cmlProbsSize, 0.0f);
         float probSum = 0.0f;
 
-        #pragma omp simd
         for (int i = 0; i < cmlProbsSize; i++)
         {
             const Savings::Saving& s = lclSavings[i];
@@ -402,14 +400,14 @@ void Ants::search(Route& bestRoute, const double startTime)
             }
 
             // Update the pheromone matrix; (see 3.3)
-            #pragma omp for simd
+            #pragma omp for
             for (int i = 0; i < bestEdges.size(); i++)
             {
                 const Int2& edge = bestEdges[i];
                 taken[edge.x][edge.y] = (taken[edge.y][edge.x] = true);
             }
 
-            #pragma omp for simd
+            #pragma omp for
             for (int i = 0; i < this->myDim; i++)
                 for (int j = 0; j < this->myDim; j++)
                     this->myPheros[i][j] = std::max((this->myPers * this->myPheros[i][j] +
