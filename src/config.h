@@ -11,5 +11,6 @@
 #define DEFAULT_OUTPUT_FILE         "best-solution.txt"
 #define DEFAULT_DATA_OUTPUT_FILE    "data.txt"
 #define DEFAULT_POPULATION_SIZE     10000
+#define DEFAULT_MAX_STAGNANCY       150
 
 #endif /* include guard */

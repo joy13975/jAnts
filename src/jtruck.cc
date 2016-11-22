@@ -16,13 +16,19 @@
 
 const argument_format af_help       = {"-h", "--help", 0, "Print help message"};
 const argument_format af_brand      = {"-br", "--basicrand", 0, "Do basic random search"};
-const argument_format af_loglv      = {"-l", "--loglv", 1, "Set log level {0-6}"};
+
+const argument_format af_loglv      = {"-lg", "--loglv", 1, "Set log level {0-6}"};
 const argument_format af_input      = {"-i", "--input", 1, "Set input file"};
 const argument_format af_output     = {"-o", "--output", 1, "Set output file"};
 const argument_format af_seed       = {"-r", "--seed", 1, "Set starting RNG seed"};
 const argument_format af_pop        = {"-p", "--population", 1, "Set population size"};
-// const argument_format af_svr        = {"-s", "--survival_rate", 1, "Set ratio of survivors"};
-// const argument_format af_ncr        = {"-n", "--newcomer_rate", 1, "Set ratio of newcomers"};
+const argument_format af_stg        = {"-mxs", "--maxstagnancy", 1, "Set stopping stagnant iterations"};
+const argument_format af_alpha      = {"-a", "--alpha", 1, "Set importance of distance in ACO"};
+const argument_format af_beta       = {"-b", "--beta", 1, "Set importance of pheromone in ACO"};
+const argument_format af_pers       = {"-ps", "--persistence", 1, "Set persistence of pheromone in ACO"};
+const argument_format af_lamda      = {"-lb", "--lamda", 1, "Set number of exchanges in ACO"};
+const argument_format af_nbh        = {"-n", "--neighbourhood", 1, "Set elite scope in ACO"};
+const argument_format af_mnph       = {"-mnp", "--minphero", 1, "Set min pheromone in ACO"};
 
 
 #define FOREACH_SEARCH_MODE(MACRO) \
@@ -38,6 +44,13 @@ String output_file              = DEFAULT_OUTPUT_FILE;
 String data_output_file         = DEFAULT_DATA_OUTPUT_FILE;
 Search_Mode search_mode         = MODE_FULL;
 long population_size            = DEFAULT_POPULATION_SIZE;
+long max_stagnancy              = DEFAULT_MAX_STAGNANCY;
+float aco_alpha                 = DEFAULT_ACO_ALPHA;
+float aco_beta                  = DEFAULT_ACO_BETA;
+float aco_pers                  = DEFAULT_ACO_PERSISTENCE;
+float aco_min_phero             = DEFAULT_ACO_MIN_PHERO;
+int aco_nbhood                  = DEFAULT_ACO_NBHOOD;
+int aco_lamda                   = DEFAULT_ACO_LAMDA;
 Route best_route                = Route::Dummy();
 int failure_count               = 0;
 std::stringstream data_stream;
@@ -51,14 +64,22 @@ void print_help_and_exit()
     raw("       Commands:\n");
     set_leading_spaces(8);
     print_help_arguement(af_help);
+    print_help_arguement(af_brand);
     set_leading_spaces(0);
     raw("       Options:\n");
     set_leading_spaces(8);
     print_help_arguement(af_loglv);
+    print_help_arguement(af_input);
+    print_help_arguement(af_output);
     print_help_arguement(af_seed);
-    // print_help_arguement(af_pop);
-    // print_help_arguement(af_svr);
-    // print_help_arguement(af_ncr);
+    print_help_arguement(af_pop);
+    print_help_arguement(af_stg);
+    print_help_arguement(af_alpha);
+    print_help_arguement(af_beta);
+    print_help_arguement(af_pers);
+    print_help_arguement(af_lamda);
+    print_help_arguement(af_nbh);
+    print_help_arguement(af_mnph);
     set_leading_spaces(0);
 
     exit(1);
@@ -100,14 +121,34 @@ void parse_args(int argc, char *argv[])
         {
             population_size = parse_long(next_arg());
         }
-        // else if (next_arg_matches(af_svr))
-        // {
-        //     set_survival_rate(parse_float(next_arg()));
-        // }
-        // else if (next_arg_matches(af_ncr))
-        // {
-        //     set_newcomer_rate(parse_float(next_arg()));
-        // }
+        else if (next_arg_matches(af_stg))
+        {
+            max_stagnancy = parse_long(next_arg());
+        }
+        else if (next_arg_matches(af_alpha))
+        {
+            aco_alpha = parse_float(next_arg());
+        }
+        else if (next_arg_matches(af_beta))
+        {
+            aco_beta = parse_float(next_arg());
+        }
+        else if (next_arg_matches(af_pers))
+        {
+            aco_pers = parse_float(next_arg());
+        }
+        else if (next_arg_matches(af_mnph))
+        {
+            aco_min_phero = parse_float(next_arg());
+        }
+        else if (next_arg_matches(af_nbh))
+        {
+            aco_nbhood = parse_long(next_arg());
+        }
+        else if (next_arg_matches(af_lamda))
+        {
+            aco_lamda = parse_long(next_arg());
+        }
         else
         {
             err("Unknown argument: \"%s\"\n", next_arg());
@@ -188,8 +229,16 @@ int main(int argc, char *argv[])
     case MODE_FULL:
     {
         msg("Running full search\n");
-        Ants a(spec, population_size, data_stream);
-        a.search(best_route);
+        Ants(spec,
+             population_size,
+             max_stagnancy,
+             aco_alpha,
+             aco_beta,
+             aco_pers,
+             aco_min_phero,
+             aco_nbhood,
+             aco_lamda,
+             data_stream).search(best_route, start_time);
         break;
     }
     default:

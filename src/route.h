@@ -8,19 +8,23 @@
 #include "spec.h"
 #include "score.h"
 
+typedef std::vector<Int2> Edges;
+
 class Route
 {
 public:
-    Route(const Spec& spec);
-    Route(const Spec& spec, const Ints& hops);
-    Route(const Spec& spec, unsigned int& seed);
+    Route(const Nodes& nodes, const int vcap);
+    Route(const Nodes& nodes, const Ints& hops);
+    Route(const Nodes& nodes, const int vcap, unsigned int& seed);
     static Route Dummy();
 
     virtual ~Route() {};
-    Route& operator=(Route other);
 
-    const Ints getHops() const;
-    String genStr() const;
+    const Ints& getHops() const;
+    const Edges& getEdges() const;
+    static String genStr(const Ints& hops);
+    static Edges genEdges(const Ints& hops);
+
     float calcRealScore() const;
     float calcFastScore() const;
     double calcScoreSerious() const;
@@ -41,13 +45,14 @@ public:
     }
 
 private:
-    const Spec *mySpec;
+    const Nodes *myNodes;
     Ints myHops;
     bool dummy = false;
+    Edges myEdges;
 
-    Route() {};
+    Route() : myNodes(NULL) {};
     inline Ints genAscendHops();
-    void insertDepots();
+    inline void insertDepots(const int vcap);
 
     template<typename T>
     inline T scoreWithFunc(T (*scoreFunc)(const Node&, const Node&)) const
@@ -55,10 +60,11 @@ private:
         const int N = this->myHops.size();
 
         T score = 0.0f;
+
         #pragma omp simd
         for (int i = 1; i < N; i++)
-            score += scoreFunc(mySpec->getNodes()[this->myHops[i - 1]],
-                               mySpec->getNodes()[this->myHops[i]]);
+            score += scoreFunc((*this->myNodes)[this->myHops[i - 1]],
+                               (*this->myNodes)[this->myHops[i]]);
 
         return score;
     }

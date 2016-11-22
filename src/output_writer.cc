@@ -13,9 +13,9 @@ void write_solution(const String output_file, const Route& bestRoute)
     //write file header
     ss << "login cy13308 67678\n";
     ss << "name Joy Yeh\n";
-    ss << "algorithm Tabu search with Clark & Wright's savings heuristic\n";
+    ss << "algorithm Ant colony optimisation with Clark & Wright's savings heuristic\n";
     ss << "cost " << std::fixed  << std::setprecision(16) << bestRoute.calcScoreSerious() << "\n";
-    ss << bestRoute.genStr();
+    ss << Route::genStr(bestRoute.getHops());
 
     write_ss(output_file, ss);
 }

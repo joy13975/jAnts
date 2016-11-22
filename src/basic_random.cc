@@ -20,7 +20,7 @@ void search(Route& bestRoute,
     float bestScore = std::numeric_limits<float>::max();
     const int dim = spec.getDim();
 
-    Cache<float> realDists = Score::makeCache(spec.getNodes(), Score::real);
+    Cache<float> realDists = Score::makeScoreCache(spec.getNodes(), Score::real);
 
     #pragma omp parallel
     {
@@ -30,7 +30,7 @@ void search(Route& bestRoute,
         for (int i = 0; i < populationSize; i++)
         {
             //generate a random route
-            Route r = Route(spec, tseed);
+            Route r = Route(spec.getNodes(), tseed);
 
             //evaluate route
             float myScore = r.calcScoreWithCache(realDists);
