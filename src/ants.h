@@ -42,18 +42,12 @@ private:
 
     Cache<float> myDists;
 
-    class Trail : public Savings::Saving
+    typedef struct Trail : public Savings::Saving
     {
-    public:
         Trail(const int n1val, const int n2val, const float gainVal)
             : Saving(n1val, n2val, gainVal) {};
-        virtual ~Trail() {};
-        void setPhero(const float val) { pheromone = val; };
-        float getPhero() const { return pheromone; };
-
-    private:
         float pheromone = 1.0f;
-    };
+    } Trail;
     typedef std::vector<Trail> Trails;
     Trails myTrails;
 

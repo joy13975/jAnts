@@ -37,21 +37,22 @@ inline void Ants::applyOneExchange(Paths& paths)
 {
     for (int i = 0; i < paths.size(); i++)
     {
-        for (int j = 0; j < paths[i].hops.size(); j++)
+        for (int j = 1; j < paths[i].hops.size() - 1; j++)
         {
             const int node1 = paths[i].hops[j];
+
+            int load1, load2;
 
             // For each node, find another path that is
             // on average closer than its current path
             float minSumDist = std::numeric_limits<float>::max();
-            float minMinDist = std::numeric_limits<float>::max();
             int nearestPathId = -1, nearestNodeIndex = -1;
             for (int k = 0; k < paths.size(); k++)
             {
                 float sumDist = 0.0f;
                 float minDist = std::numeric_limits<float>::max();
                 int minDistIndex = -1;
-                for (int l = 0; l < paths[k].hops.size(); l++)
+                for (int l = 1; l < paths[k].hops.size() - 1; l++)
                 {
                     const float dist = this->myDists[node1][paths[k].hops[l]];
                     sumDist += dist;
@@ -63,20 +64,20 @@ inline void Ants::applyOneExchange(Paths& paths)
                 }
 
                 // Check load compatibility
-                if (minDistIndex != -1 &&
-                        sumDist < minSumDist &&
-                        paths[i].load -
-                        this->myNodes[node1].z +
-                        this->myNodes[paths[k].hops[minDistIndex]].z <=
-                        this->myVCap &&
-                        paths[k].load -
-                        this->myNodes[paths[k].hops[minDistIndex]].z +
-                        this->myNodes[node1].z <=
-                        this->myVCap)
+                if ((sumDist < minSumDist)
+                        &&
+                        ((load1 =
+                              paths[i].load - this->myNodes[node1].z +
+                              this->myNodes[paths[k].hops[minDistIndex]].z)
+                         <= this->myVCap)
+                        &&
+                        ((load2 =
+                              paths[k].load + this->myNodes[node1].z -
+                              this->myNodes[paths[k].hops[minDistIndex]].z)
+                         <= this->myVCap))
                 {
                     minSumDist = sumDist;
                     nearestPathId = k;
-                    minMinDist = minDist;
                     nearestNodeIndex = minDistIndex;
                 }
             }
@@ -113,7 +114,9 @@ inline void Ants::applyOneExchange(Paths& paths)
                 if (newCostSum < oldCostSum)
                 {
                     paths[i].hops[j] = node2;
+                    paths[i].load = load1;
                     paths[nearestPathId].hops[nearestNodeIndex] = node1;
+                    paths[nearestPathId].load = load2;
                 }
             }
         }
@@ -287,6 +290,8 @@ inline Ants::Paths Ants::wayPointsToPaths(WayPoints localWayPoints)
                 wp->left = -1;
             }
             while (true);
+
+            paths.back().load = wp->load;
         }
     }
 
@@ -313,7 +318,7 @@ inline Ants::WayPoints Ants::applySavings(unsigned int& seed, Trails lclTrails)
         for (int i = 0; i < cmlProbsSize; i++)
         {
             const Trail& s = lclTrails[i];
-            cmlProbs[i] = (probSum += pow(s.gain, myAlpha) * pow(s.getPhero(), myBeta));
+            cmlProbs[i] = (probSum += pow(s.gain, myAlpha) * pow(s.pheromone, myBeta));
         }
 
         // Roll dice and find corresponding id
@@ -491,16 +496,15 @@ void Ants::search(Route& bestRoute, const double startTime)
             for (int i = 0; i < this->myTrails.size(); i++)
             {
                 Trail& t = this->myTrails[i];
-                t.setPhero(
+                t.pheromone =
                     std::max(
                         std::max(
-                            (this->myPers * t.getPhero() +
+                            (this->myPers * t.pheromone +
                              (1 - this->myPers) * taken[t.n1][t.n2]),
                             this->myMinPhero
                         ),
                         stagnancy / 10.0f
-                    )
-                );
+                    );
             }
         }
         while (stagnancy < 1.0f);

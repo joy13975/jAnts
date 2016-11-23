@@ -14,7 +14,7 @@ class Route
 {
 public:
     Route(const Nodes& nodes, const int vcap);
-    Route(const Nodes& nodes, const Ints& hops, const int vcap);
+    Route(const Nodes& nodes, const Ints hops, const int vcap);
     Route(const Nodes& nodes, const int vcap, unsigned int& seed);
     static Route Dummy();
 
@@ -37,7 +37,6 @@ public:
         const int N = this->myHops.size();
 
         T score = 0.0f;
-
         #pragma omp simd
         for (int i = 1; i < N; i++)
             score += C[this->myHops[i - 1]][this->myHops[i]];

@@ -113,7 +113,7 @@ Route::Route(const Nodes& nodes, const int vcap)
 }
 
 //copy from existing hops
-Route::Route(const Nodes& nodes, const Ints& hops, const int vcap)
+Route::Route(const Nodes& nodes, const Ints hops, const int vcap)
     : myNodes(&nodes), myHops(hops), myEdges(genEdges(this->myHops))
 {
     if (vcap > 0)
