@@ -55,14 +55,18 @@ private:
         float pheromone = 1.0f;
     };
     typedef std::vector<Trail> Trails;
-
     Trails myTrails;
 
-    typedef std::vector<Ints> Paths;
+    typedef struct Path
+    {
+        Ints hops;
+        int load;
+    } Path;
+    typedef std::vector<Path> Paths;
     inline void applyOneExchange(Paths& paths);
-    inline void applyKruskal(Ints& path);
+    inline void applyKruskal(Path& path);
     inline void improvePaths(Paths& paths);
-    inline Ints pathsToHops(const Paths &paths);
+    inline Ints pathToHops(const Paths &paths);
 
     typedef struct WayPoint
     {

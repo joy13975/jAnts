@@ -37,9 +37,9 @@ inline void Ants::applyOneExchange(Paths& paths)
 {
     for (int i = 0; i < paths.size(); i++)
     {
-        for (int j = 0; j < paths[i].size(); j++)
+        for (int j = 0; j < paths[i].hops.size(); j++)
         {
-            const int node1 = paths[i][j];
+            const int node1 = paths[i].hops[j];
 
             // For each node, find another path that is
             // on average closer than its current path
@@ -51,9 +51,9 @@ inline void Ants::applyOneExchange(Paths& paths)
                 float sumDist = 0.0f;
                 float minDist = std::numeric_limits<float>::max();
                 int minDistIndex = -1;
-                for (int l = 0; l < paths[k].size(); l++)
+                for (int l = 0; l < paths[k].hops.size(); l++)
                 {
-                    const float dist = this->myDists[node1][paths[k][l]];
+                    const float dist = this->myDists[node1][paths[k].hops[l]];
                     sumDist += dist;
                     if (dist < minDist)
                     {
@@ -62,7 +62,17 @@ inline void Ants::applyOneExchange(Paths& paths)
                     }
                 }
 
-                if (sumDist < minSumDist)
+                // Check load compatibility
+                if (minDistIndex != -1 &&
+                        sumDist < minSumDist &&
+                        paths[i].load -
+                        this->myNodes[node1].z +
+                        this->myNodes[paths[k].hops[minDistIndex]].z <=
+                        this->myVCap &&
+                        paths[k].load -
+                        this->myNodes[paths[k].hops[minDistIndex]].z +
+                        this->myNodes[node1].z <=
+                        this->myVCap)
                 {
                     minSumDist = sumDist;
                     nearestPathId = k;
@@ -71,36 +81,39 @@ inline void Ants::applyOneExchange(Paths& paths)
                 }
             }
 
-            if (nearestPathId != i)
+            if (nearestPathId != i && nearestPathId != -1)
             {
+                const int node2 = paths[nearestPathId].hops[nearestNodeIndex];
+
                 // paths[nearestPathId] might be a better home for node1,
                 // and paths[k][nearestNodeIndex] is the best candidate for swapping
                 const float oldCostSum = Route(this->myNodes,
-                                               paths[i],
+                                               paths[i].hops,
                                                this->myVCap).
                                          calcScoreWithCache(this->myDists)
                                          +
                                          Route(this->myNodes,
-                                               paths[nearestPathId],
+                                               paths[nearestPathId].hops,
                                                this->myVCap).
                                          calcScoreWithCache(this->myDists);
-                Ints newPath1 = Ints(paths[i]), newPath2 = Ints(paths[nearestPathId]);
-                newPath1[j] = newPath2[nearestNodeIndex];
-                newPath2[nearestNodeIndex] = node1;
+                Ints newHops1 = Ints(paths[i].hops);
+                Ints newHops2 = Ints(paths[nearestPathId].hops);
+                newHops1[j] = node2;
+                newHops2[nearestNodeIndex] = node1;
                 const float newCostSum = Route(this->myNodes,
-                                               newPath1,
+                                               newHops1,
                                                this->myVCap).
                                          calcScoreWithCache(this->myDists)
                                          +
                                          Route(this->myNodes,
-                                               newPath2,
+                                               newHops2,
                                                this->myVCap).
                                          calcScoreWithCache(this->myDists);
 
                 if (newCostSum < oldCostSum)
                 {
-                    paths[i] = newPath1;
-                    paths[nearestPathId] = newPath2;
+                    paths[i].hops[j] = node2;
+                    paths[nearestPathId].hops[nearestNodeIndex] = node1;
                 }
             }
         }
@@ -108,16 +121,16 @@ inline void Ants::applyOneExchange(Paths& paths)
 }
 
 typedef std::vector<std::set<int>> Forest;
-inline void Ants::applyKruskal(Ints& path)
+inline void Ants::applyKruskal(Path& path)
 {
-    const int nHops = path.size() - 1;
+    const int nHops = path.hops.size() - 1;
     const int nEdges = nHops * (nHops - 1) / 2;
     Edges E;
     E.reserve(nEdges);
 
     for (int i = 0; i < nHops; i++)
         for (int j = i + 1; j < nHops; j++)
-            E.emplace_back(path[i], path[j]);
+            E.emplace_back(path.hops[i], path.hops[j]);
 
     std::sort(E.begin(),
               E.end(),
@@ -127,7 +140,7 @@ inline void Ants::applyKruskal(Ints& path)
 
     Forest F = Forest(nHops);
     for (int i = 0; i < nHops; i++)
-        F[i].insert(path[i]);
+        F[i].insert(path.hops[i]);
 
     Edges mst;
     mst.reserve(nHops - 1);
@@ -166,11 +179,11 @@ inline void Ants::applyKruskal(Ints& path)
     }
 
     // Turn MST into path by doubling its edges and doing DFS
-    const Route r1 = Route(this->myNodes, path, -1);
+    const Route r1 = Route(this->myNodes, path.hops, -1);
     const float c1 = r1.calcScoreWithCache(this->myDists);
     mst.insert(mst.end(), mst.begin(), mst.end());
     Ints newPath;
-    newPath.reserve(path.size());
+    newPath.reserve(path.hops.size());
     newPath.push_back(0);
     int lastNode = 0, edgeWalked = 0;
     while (edgeWalked < 2 * (nHops - 1))
@@ -212,7 +225,7 @@ inline void Ants::applyKruskal(Ints& path)
     // dbg("r2: %s", Route::genStr(r2.getHops()).c_str());
 
     if (c2 < c1)
-        path = newPath;
+        path.hops = newPath;
 }
 
 inline void Ants::improvePaths(Paths& paths)
@@ -223,14 +236,16 @@ inline void Ants::improvePaths(Paths& paths)
     applyOneExchange(paths);
 }
 
-inline Ints Ants::pathsToHops(const Paths &paths)
+inline Ints Ants::pathToHops(const Paths &paths)
 {
     Ints hops;
 
     for (int i = 0; i < paths.size(); i++)
         hops.insert(hops.end(),
-                    paths[i].begin(),
-                    i < paths.size() - 1 ? paths[i].end() - 1 : paths[i].end());
+                    paths[i].hops.begin(),
+                    i < paths.size() - 1 ?
+                    paths[i].hops.end() - 1 : paths[i].hops.end());
+
     return hops;
 }
 
@@ -244,8 +259,8 @@ inline Ants::Paths Ants::wayPointsToPaths(WayPoints localWayPoints)
         // Traverse only if not marked as visited and is a terminal node
         if (wp->left != -1 && wp->right * wp->left == 0)
         {
-            paths.push_back(Ints());
-            Ints& hops = paths.back();
+            paths.push_back(Path());
+            Ints& hops = paths.back().hops;
 
             // First node is depot
             hops.push_back(0);
@@ -428,7 +443,7 @@ void Ants::search(Route& bestRoute, const double startTime)
 
                 // Improve the CVRP clustering by applying the Swap Local Search; (see 3.2)
                 improvePaths(paths);
-                Route r(myNodes, pathsToHops(paths), 0);
+                Route r(myNodes, pathToHops(paths), 0);
                 // dbg("Route: %s\nCost: %.4f\n", r.genStr().c_str(), r.calcScoreSerious());
 
                 // Update the best found solution (if applicable);
