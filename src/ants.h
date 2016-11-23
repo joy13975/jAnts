@@ -58,7 +58,8 @@ private:
     } Path;
     typedef std::vector<Path> Paths;
     inline void applyOneExchange(Paths& paths);
-    inline void applyKruskal(Path& path);
+    inline void applyTwoOpt(Path& path);
+
     inline void improvePaths(Paths& paths);
     inline Ints pathToHops(const Paths &paths);
 

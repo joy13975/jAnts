@@ -123,118 +123,45 @@ inline void Ants::applyOneExchange(Paths& paths)
     }
 }
 
-typedef std::vector<std::set<int>> Forest;
-inline void Ants::applyKruskal(Path& path)
+void Ants::applyTwoOpt(Path& path)
 {
-    const int nHops = path.hops.size() - 1;
-    const int nEdges = nHops * (nHops - 1) / 2;
-    Edges E;
-    E.reserve(nEdges);
+    // Get tour size
+    const int nHops = path.hops.size();
 
-    for (int i = 0; i < nHops; i++)
-        for (int j = i + 1; j < nHops; j++)
-            E.emplace_back(path.hops[i], path.hops[j]);
-
-    std::sort(E.begin(),
-              E.end(),
-    [this](const Int2 & e1, const Int2 & e2) {
-        return this->myDists[e1.x][e1.y] < this->myDists[e2.x][e2.y];
-    });
-
-    Forest F = Forest(nHops);
-    for (int i = 0; i < nHops; i++)
-        F[i].insert(path.hops[i]);
-
-    Edges mst;
-    mst.reserve(nHops - 1);
-    int edgeId = -1;
-
-    for (int i = 0; i < nEdges; i++)
+    // repeat until no improvement is made
+    bool improved = true;
+    while (improved)
     {
-        const Int2& edge = E[i];
-        const int nTrees = F.size();
+        improved = false;
+        float bestCost = Route(this->myNodes, path.hops, -1)
+                         .calcScoreWithCache(this->myDists);
 
-        if (nTrees == 1)
-            break;
-
-        // Find tree ids
-        int t1 = -1, t2 = -1;
-        for (int j = 0; j < nTrees; j++)
+        #pragma omp simd
+        for (int i = 1; i < nHops - 2; i++)
         {
-            if (F[j].find(edge.x) != F[j].end())
-                t1 = j;
-            if (F[j].find(edge.y) != F[j].end())
-                t2 = j;
-        }
-
-        // If edge ends belong to different trees, merge, else ignore
-        if (t1 != t2)
-        {
-            F[t1].insert(F[t2].begin(), F[t2].end());
-            F.erase(F.begin() + t2);
-            mst.push_back(edge);
-            // dbg("Push edge: %d-%d\n", edge.x, edge.y);
-
-            // Record first edge id as the one having a depot
-            if (edge.x == 0) // x always smaller than y
-                edgeId = mst.size() - 1;
-        }
-    }
-
-    // Turn MST into path by doubling its edges and doing DFS
-    const Route r1 = Route(this->myNodes, path.hops, -1);
-    const float c1 = r1.calcScoreWithCache(this->myDists);
-    mst.insert(mst.end(), mst.begin(), mst.end());
-    Ints newPath;
-    newPath.reserve(path.hops.size());
-    newPath.push_back(0);
-    int lastNode = 0, edgeWalked = 0;
-    while (edgeWalked < 2 * (nHops - 1))
-    {
-        // dbg("lastNode: %d, edgeWalked: %d (< %d)\n", lastNode, edgeWalked, 2 * nHops);
-
-        // Find next edge to walk
-        int eId = -1, nextNode = -1;
-        for (int i = 0; i < mst.size(); i++)
-        {
-            if (mst[i].x == lastNode)
+            for (int j = i + 1; j < nHops - 1; j++)
             {
-                eId = i;
-                nextNode = mst[i].y;
-                break;
-            }
-            else if (mst[i].y == lastNode)
-            {
-                eId = i;
-                nextNode = mst[i].x;
-                break;
+                // in order up to i, reverse up to j, then in order
+                Ints newHops = path.hops;
+                std::reverse(newHops.begin() + i, newHops.begin() + j + 1);
+
+                const float newCost = Route(this->myNodes, newHops, -1)
+                                      .calcScoreWithCache(this->myDists);
+                if (newCost < bestCost )
+                {
+                    improved = true;
+                    path.hops = newHops;
+                    bestCost = newCost;
+                }
             }
         }
-
-        // Walk edge
-        mst.erase(mst.begin() + eId);
-        if (std::find(newPath.begin(), newPath.end(), nextNode) == newPath.end())
-            newPath.push_back(nextNode);
-        lastNode = nextNode;
-        edgeWalked++;
     }
-    newPath.push_back(0);
-
-    const Route r2 = Route(this->myNodes, newPath, -1);
-    const float c2 = r2.calcScoreWithCache(this->myDists);
-
-    // dbg("%.2f vs %.2f\n", c1, c2);
-    // dbg("r1: %s", Route::genStr(r1.getHops()).c_str());
-    // dbg("r2: %s", Route::genStr(r2.getHops()).c_str());
-
-    if (c2 < c1)
-        path.hops = newPath;
 }
 
 inline void Ants::improvePaths(Paths& paths)
 {
     for (int i = 0; i < paths.size(); i++)
-        applyKruskal(paths[i]);
+        applyTwoOpt(paths[i]);
 
     applyOneExchange(paths);
 }
