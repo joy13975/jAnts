@@ -29,8 +29,7 @@ const argument_format af_stg        = {"-mxs", "--maxstagnancy", 1, "Set stoppin
 const argument_format af_alpha      = {"-a", "--alpha", 1, "Set importance of distance in ACO"};
 const argument_format af_beta       = {"-b", "--beta", 1, "Set importance of pheromone in ACO"};
 const argument_format af_pers       = {"-ps", "--persistence", 1, "Set persistence of pheromone in ACO"};
-const argument_format af_lamda      = {"-lb", "--lamda", 1, "Set number of exchanges in ACO"};
-const argument_format af_nbh        = {"-n", "--neighbourhood", 1, "Set elite scope in ACO"};
+const argument_format af_nbh        = {"-nd", "--nbhooddiv", 1, "Set nbhood divisor in ACO"};
 const argument_format af_mnph       = {"-mnp", "--minphero", 1, "Set min pheromone in ACO"};
 
 
@@ -53,8 +52,7 @@ float aco_alpha                 = DEFAULT_ACO_ALPHA;
 float aco_beta                  = DEFAULT_ACO_BETA;
 float aco_pers                  = DEFAULT_ACO_PERSISTENCE;
 float aco_min_phero             = DEFAULT_ACO_MIN_PHERO;
-int aco_nbhood                  = DEFAULT_ACO_NBHOOD;
-int aco_lamda                   = DEFAULT_ACO_LAMDA;
+int aco_nbhood_div              = DEFAULT_ACO_NBHOOD_DIV;
 Route best_route                = Route::Dummy();
 int failure_count               = 0;
 std::stringstream data_stream;
@@ -82,7 +80,6 @@ void print_help_and_exit()
     print_help_arguement(af_alpha);
     print_help_arguement(af_beta);
     print_help_arguement(af_pers);
-    print_help_arguement(af_lamda);
     print_help_arguement(af_nbh);
     print_help_arguement(af_mnph);
     set_leading_spaces(0);
@@ -152,11 +149,7 @@ void parse_args(int argc, char *argv[])
         }
         else if (next_arg_matches(af_nbh))
         {
-            aco_nbhood = parse_long(next_arg());
-        }
-        else if (next_arg_matches(af_lamda))
-        {
-            aco_lamda = parse_long(next_arg());
+            aco_nbhood_div = parse_long(next_arg());
         }
         else
         {
@@ -251,8 +244,7 @@ int main(int argc, char *argv[])
              aco_beta,
              aco_pers,
              aco_min_phero,
-             aco_nbhood,
-             aco_lamda,
+             aco_nbhood_div,
              data_stream).search(best_route, start_time);
         break;
     }

@@ -11,8 +11,7 @@
 #define DEFAULT_ACO_PHEROMONE       1.0f
 #define DEFAULT_ACO_PERSISTENCE     0.975f
 #define DEFAULT_ACO_MIN_PHERO       0.02f
-#define DEFAULT_ACO_NBHOOD          10
-#define DEFAULT_ACO_LAMDA           1
+#define DEFAULT_ACO_NBHOOD_DIV      10
 
 class Ants
 {
@@ -25,7 +24,6 @@ public:
          const float pers,
          const float minPhero,
          const int nbhood,
-         const int lamda,
          std::stringstream& dataStream);
     virtual ~Ants() {};
     void search(Route& bestRoute, const double startTime);
@@ -36,7 +34,6 @@ private:
     const long myMaxStag;
     const float myAlpha, myBeta, myPers, myMinPhero;
     const int myNBHood;
-    const int myLamda;
     std::stringstream& myStream;
 
     const Nodes& myNodes;
@@ -62,9 +59,8 @@ private:
     Trails myTrails;
 
     typedef std::vector<Ints> Paths;
-    inline void applyLamdaExchange(Ints& path);
+    inline void applyOneExchange(Paths& paths);
     inline void applyKruskal(Ints& path);
-    inline void applyChristofide(Ints& path);
     inline void improvePaths(Paths& paths);
     inline Ints pathsToHops(const Paths &paths);
 

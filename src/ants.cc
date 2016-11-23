@@ -19,12 +19,11 @@ Ants::Ants(const Spec& spec,
            const float beta,
            const float pers,
            const float minPhero,
-           const int nbhood,
-           const int lamda,
+           const int nbhoodDiv,
            std::stringstream& dataStream)
     : mySpec(spec), myPopSize(popSize), myMaxStag(maxStag),
       myAlpha(alpha), myBeta(beta), myPers(pers), myMinPhero(minPhero),
-      myNBHood(spec.getDim() / nbhood), myLamda(lamda),
+      myNBHood(spec.getDim() / nbhoodDiv),
       myStream(dataStream),
       myNodes(spec.getNodes()), myDim(spec.getDim()), myVCap(spec.getVCap())
 {
@@ -34,9 +33,78 @@ Ants::Ants(const Spec& spec,
         myTrails.emplace_back(S[i].n1, S[i].n2, S[i].gain);
 }
 
-inline void Ants::applyLamdaExchange(Ints& path)
+inline void Ants::applyOneExchange(Paths& paths)
 {
+    for (int i = 0; i < paths.size(); i++)
+    {
+        for (int j = 0; j < paths[i].size(); j++)
+        {
+            const int node1 = paths[i][j];
 
+            // For each node, find another path that is
+            // on average closer than its current path
+            float minSumDist = std::numeric_limits<float>::max();
+            float minMinDist = std::numeric_limits<float>::max();
+            int nearestPathId = -1, nearestNodeIndex = -1;
+            for (int k = 0; k < paths.size(); k++)
+            {
+                float sumDist = 0.0f;
+                float minDist = std::numeric_limits<float>::max();
+                int minDistIndex = -1;
+                for (int l = 0; l < paths[k].size(); l++)
+                {
+                    const float dist = this->myDists[node1][paths[k][l]];
+                    sumDist += dist;
+                    if (dist < minDist)
+                    {
+                        minDist = dist;
+                        minDistIndex = l;
+                    }
+                }
+
+                if (sumDist < minSumDist)
+                {
+                    minSumDist = sumDist;
+                    nearestPathId = k;
+                    minMinDist = minDist;
+                    nearestNodeIndex = minDistIndex;
+                }
+            }
+
+            if (nearestPathId != i)
+            {
+                // paths[nearestPathId] might be a better home for node1,
+                // and paths[k][nearestNodeIndex] is the best candidate for swapping
+                const float oldCostSum = Route(this->myNodes,
+                                               paths[i],
+                                               this->myVCap).
+                                         calcScoreWithCache(this->myDists)
+                                         +
+                                         Route(this->myNodes,
+                                               paths[nearestPathId],
+                                               this->myVCap).
+                                         calcScoreWithCache(this->myDists);
+                Ints newPath1 = Ints(paths[i]), newPath2 = Ints(paths[nearestPathId]);
+                newPath1[j] = newPath2[nearestNodeIndex];
+                newPath2[nearestNodeIndex] = node1;
+                const float newCostSum = Route(this->myNodes,
+                                               newPath1,
+                                               this->myVCap).
+                                         calcScoreWithCache(this->myDists)
+                                         +
+                                         Route(this->myNodes,
+                                               newPath2,
+                                               this->myVCap).
+                                         calcScoreWithCache(this->myDists);
+
+                if (newCostSum < oldCostSum)
+                {
+                    paths[i] = newPath1;
+                    paths[nearestPathId] = newPath2;
+                }
+            }
+        }
+    }
 }
 
 typedef std::vector<std::set<int>> Forest;
@@ -147,17 +215,12 @@ inline void Ants::applyKruskal(Ints& path)
         path = newPath;
 }
 
-inline void Ants::applyChristofide(Ints& path)
-{
-    applyKruskal(path);
-
-    applyLamdaExchange(path);
-}
-
 inline void Ants::improvePaths(Paths& paths)
 {
     for (int i = 0; i < paths.size(); i++)
-        applyChristofide(paths[i]);
+        applyKruskal(paths[i]);
+
+    applyOneExchange(paths);
 }
 
 inline Ints Ants::pathsToHops(const Paths &paths)
@@ -348,7 +411,6 @@ void Ants::search(Route& bestRoute, const double startTime)
     raw_at(LOG_MESSAGE, "pers:      %.3f\n",    this->myPers);
     raw_at(LOG_MESSAGE, "minPhero:  %.3f\n",    this->myMinPhero);
     raw_at(LOG_MESSAGE, "nbhood:    %d\n",      this->myNBHood);
-    raw_at(LOG_MESSAGE, "lamda:     %d\n",      this->myLamda);
     raw_at(LOG_MESSAGE, "popSize:   %ld\n",     this->myPopSize);
     raw_at(LOG_MESSAGE, "maxStag:   %ld\n",     this->myMaxStag);
 
