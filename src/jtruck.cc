@@ -14,9 +14,11 @@
 #include "route.h"
 #include "output_writer.h"
 #include "ants.h"
+#include "basic_exchange.h"
 
 const argument_format af_help       = {"-h", "--help", 0, "Print help message"};
 const argument_format af_brand      = {"-br", "--basicrand", 0, "Do basic random search"};
+const argument_format af_exc        = {"-ex", "--exchange", 0, "Do basic exchange search"};
 
 const argument_format af_loglv      = {"-lg", "--loglv", 1, "Set log level {0-6}"};
 const argument_format af_input      = {"-i", "--input", 1, "Set input file"};
@@ -34,7 +36,8 @@ const argument_format af_mnph       = {"-mnp", "--minphero", 1, "Set min pheromo
 
 #define FOREACH_SEARCH_MODE(MACRO) \
     MACRO(MODE_BRAND) \
-    MACRO(MODE_FULL)
+    MACRO(MODE_EXCHANGE) \
+    MACRO(MODE_ACO)
 
 DECL_ENUM_AND_STRING(Search_Mode, FOREACH_SEARCH_MODE);
 
@@ -43,7 +46,7 @@ double start_time               = -1;
 String input_file               = DEFAULT_INPUT_FILE;
 String output_file              = DEFAULT_OUTPUT_FILE;
 String data_output_file         = DEFAULT_DATA_OUTPUT_FILE;
-Search_Mode search_mode         = MODE_FULL;
+Search_Mode search_mode         = MODE_ACO;
 long population_size            = DEFAULT_POPULATION_SIZE;
 long max_stagnancy              = DEFAULT_MAX_STAGNANCY;
 float aco_alpha                 = DEFAULT_ACO_ALPHA;
@@ -66,6 +69,7 @@ void print_help_and_exit()
     set_leading_spaces(8);
     print_help_arguement(af_help);
     print_help_arguement(af_brand);
+    print_help_arguement(af_exc);
     set_leading_spaces(0);
     raw("       Options:\n");
     set_leading_spaces(8);
@@ -100,6 +104,10 @@ void parse_args(int argc, char *argv[])
         else if (next_arg_matches(af_brand))
         {
             search_mode = MODE_BRAND;
+        }
+        else if (next_arg_matches(af_exc))
+        {
+            search_mode = MODE_EXCHANGE;
         }
         else if (next_arg_matches(af_loglv))
         {
@@ -227,9 +235,15 @@ int main(int argc, char *argv[])
         BasicRandom::search(best_route, spec, population_size, data_stream);
         break;
     }
-    case MODE_FULL:
+    case MODE_EXCHANGE:
     {
-        msg("Running full search\n");
+        msg("Running basic exchange search\n");
+        BasicExchange::search(best_route, spec, data_stream, start_time);
+        break;
+    }
+    case MODE_ACO:
+    {
+        msg("Running ACO search\n");
         Ants(spec,
              population_size,
              max_stagnancy,

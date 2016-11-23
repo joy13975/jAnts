@@ -69,7 +69,7 @@ bool Route::isDummy()
     return this->dummy;
 }
 
-inline void Route::insertDepots(const int vcap)
+void Route::insertDepots(const int vcap)
 {
     // insert depot as first hop
     this->myHops.insert(this->myHops.begin(), 0);
@@ -93,10 +93,10 @@ inline void Route::insertDepots(const int vcap)
     this->myHops.push_back(0);
 }
 
-Ints Route::genAscendHops()
+Ints Route::genAscendHops(const int dim)
 {
     //initialise route - node 1 (id 0) is skipped
-    Ints hops = Ints(this->myNodes->size() - 1);
+    Ints hops = Ints(dim - 1);
 
     // Fill with increasing number from 1
     std::iota(hops.begin(), hops.end(), 1);
@@ -113,19 +113,20 @@ Route::Route(const Nodes& nodes, const int vcap)
 }
 
 //copy from existing hops
-Route::Route(const Nodes& nodes, const Ints& hops)
+Route::Route(const Nodes& nodes, const Ints& hops, const int vcap)
     : myNodes(&nodes), myHops(hops), myEdges(genEdges(this->myHops))
 {
-    // Assume caller has prepared hops with depots
+    if (vcap > 0)
+        this->insertDepots(vcap);
 }
 
 //initialise ascending and then randomise
 Route::Route(const Nodes& nodes, const int vcap, unsigned int& seed)
     : myNodes(&nodes)
 {
-    this->myHops = genAscendHops();
+    this->myHops = genAscendHops(nodes.size());
     jRNG::random_shuffle(seed, this->myHops.begin(), this->myHops.end());
-    this->insertDepots(vcap);
+    insertDepots(vcap);
     this->myEdges = genEdges(this->myHops);
 }
 

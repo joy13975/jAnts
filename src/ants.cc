@@ -28,9 +28,10 @@ Ants::Ants(const Spec& spec,
       myStream(dataStream),
       myNodes(spec.getNodes()), myDim(spec.getDim()), myVCap(spec.getVCap())
 {
-    this->myDists       = Score::makeScoreCache(this->myNodes, Score::real);
-    this->myPheros    = makeCache(this->myDim, 1.0f);
-    this->mySavings   = Savings::makeSavings(this->myDists);
+    this->myDists  = Score::makeScoreCache(this->myNodes, Score::real);
+    Savings::Savings S = Savings::makeSavings(this->myDists);
+    for (int i = 0; i < S.size(); i++)
+        myTrails.emplace_back(S[i].n1, S[i].n2, S[i].gain);
 }
 
 inline void Ants::applyLamdaExchange(Ints& path)
@@ -97,7 +98,7 @@ inline void Ants::applyKruskal(Ints& path)
     }
 
     // Turn MST into path by doubling its edges and doing DFS
-    const Route r1 = Route(this->myNodes, path);
+    const Route r1 = Route(this->myNodes, path, -1);
     const float c1 = r1.calcScoreWithCache(this->myDists);
     mst.insert(mst.end(), mst.begin(), mst.end());
     Ints newPath;
@@ -135,7 +136,7 @@ inline void Ants::applyKruskal(Ints& path)
     }
     newPath.push_back(0);
 
-    const Route r2 = Route(this->myNodes, newPath);
+    const Route r2 = Route(this->myNodes, newPath, -1);
     const float c2 = r2.calcScoreWithCache(this->myDists);
 
     // dbg("%.2f vs %.2f\n", c1, c2);
@@ -214,8 +215,7 @@ inline Ants::Paths Ants::wayPointsToPaths(WayPoints localWayPoints)
     return paths;
 }
 
-inline Ants::WayPoints Ants::applySavings(unsigned int& seed,
-        Savings::Savings lclSavings)
+inline Ants::WayPoints Ants::applySavings(unsigned int& seed, Trails lclTrails)
 {
     WayPoints wayPoints = WayPoints(this->myDim);
     for (int i = 1; i < this->myDim; i++)
@@ -225,17 +225,17 @@ inline Ants::WayPoints Ants::applySavings(unsigned int& seed,
     }
 
     // Apply savings until no more feasible
-    while (lclSavings.size() > 0)
+    while (lclTrails.size() > 0)
     {
         // Accumulate probabilities (no need to sort)
-        const int cmlProbsSize = std::min(myNBHood, (int) lclSavings.size());
+        const int cmlProbsSize = std::min(myNBHood, (int) lclTrails.size());
         Floats cmlProbs = Floats(cmlProbsSize, 0.0f);
         float probSum = 0.0f;
 
         for (int i = 0; i < cmlProbsSize; i++)
         {
-            const Savings::Saving& s = lclSavings[i];
-            cmlProbs[i] = (probSum += pow(s.gain, myAlpha) * pow(this->myPheros[s.n1][s.n2], myBeta));
+            const Trail& s = lclTrails[i];
+            cmlProbs[i] = (probSum += pow(s.gain, myAlpha) * pow(s.getPhero(), myBeta));
         }
 
         // Roll dice and find corresponding id
@@ -254,9 +254,9 @@ inline Ants::WayPoints Ants::applySavings(unsigned int& seed,
             die("Could not find saving ID! cmlProbsSize=%d, dice=%.2f, probSum=%.2f\n",
                 cmlProbsSize, dice, probSum);
 
-        const Savings::Saving& chosenSaving = lclSavings[chosenSId];
+        const Savings::Saving& chosenSaving = lclTrails[chosenSId];
         // dbg("Saving %d~%d, id: %d, savings size: %d\n",
-        //     chosenSaving.n1, chosenSaving.n2, chosenSId, lclSavings.size());
+        //     chosenSaving.n1, chosenSaving.n2, chosenSId, lclTrails.size());
 
         WayPoint &w1 = wayPoints[chosenSaving.n1], &w2 = wayPoints[chosenSaving.n2];
 
@@ -306,10 +306,10 @@ inline Ants::WayPoints Ants::applySavings(unsigned int& seed,
         // dbg("To remove2: %d\n", toRemove2);
 
         const int myVCap = this->myVCap;
-        lclSavings.erase(
+        lclTrails.erase(
             std::remove_if(
-                lclSavings.begin(),
-                lclSavings.end(),
+                lclTrails.begin(),
+                lclTrails.end(),
                 [&myVCap, &wayPoints, &chosenSaving, &toRemove1, &toRemove2]
                 (const Savings::Saving & s)
         {
@@ -319,7 +319,7 @@ inline Ants::WayPoints Ants::applySavings(unsigned int& seed,
                    (wayPoints[s.n1].load + wayPoints[s.n2].load > myVCap) ||
                    (wayPoints[s.n1].otherEnd == &wayPoints[s.n2]);
         }),
-        lclSavings.end());
+        lclTrails.end());
     }
 
     return wayPoints;
@@ -327,7 +327,7 @@ inline Ants::WayPoints Ants::applySavings(unsigned int& seed,
 
 inline Ants::Paths Ants::walk(unsigned int& seed)
 {
-    WayPoints wayPoints = applySavings(seed, this->mySavings);
+    WayPoints wayPoints = applySavings(seed, this->myTrails);
 
     return wayPointsToPaths(wayPoints);
 }
@@ -338,6 +338,7 @@ void Ants::search(Route& bestRoute, const double startTime)
     float prevBestScore = bestScore;
     long stagnantCount = 0;
     int itr = 0;
+    float stagnancy;
     Edges bestEdges;
     Cache<bool> taken;
 
@@ -365,7 +366,7 @@ void Ants::search(Route& bestRoute, const double startTime)
 
                 // Improve the CVRP clustering by applying the Swap Local Search; (see 3.2)
                 improvePaths(paths);
-                Route r(myNodes, pathsToHops(paths));
+                Route r(myNodes, pathsToHops(paths), 0);
                 // dbg("Route: %s\nCost: %.4f\n", r.genStr().c_str(), r.calcScoreSerious());
 
                 // Update the best found solution (if applicable);
@@ -389,17 +390,18 @@ void Ants::search(Route& bestRoute, const double startTime)
                 prevBestScore = bestScore;
 
                 itr++;
-                msg("itr# %5.d, best %6.4f, time %6.2f, stagnant %4.2f%%\n",
+                stagnancy = (float) stagnantCount / myMaxStag;
+                msg("itr# %5.d, best %6.4f, time %6.2f, stagnancy %4.2f%%\n",
                     itr,
                     bestScore,
                     (get_timestamp_us() - startTime) / 1e6,
-                    (float) 100.0f * stagnantCount / myMaxStag);
+                    100.0f * stagnancy);
                 bestEdges = Edges(bestRoute.getEdges());
                 taken = makeCache(this->myDim, false);
                 this->myStream << itr << " " << std::fixed << std::setprecision(4) << bestScore << "\n";
             }
 
-            // Update the pheromone matrix; (see 3.3)
+            // Find edges taken
             #pragma omp for
             for (int i = 0; i < bestEdges.size(); i++)
             {
@@ -407,13 +409,23 @@ void Ants::search(Route& bestRoute, const double startTime)
                 taken[edge.x][edge.y] = (taken[edge.y][edge.x] = true);
             }
 
+            // Update pheromones
             #pragma omp for
-            for (int i = 0; i < this->myDim; i++)
-                for (int j = 0; j < this->myDim; j++)
-                    this->myPheros[i][j] = std::max((this->myPers * this->myPheros[i][j] +
-                                                     (1 - this->myPers) * taken[i][j]),
-                                                    this->myMinPhero);
+            for (int i = 0; i < this->myTrails.size(); i++)
+            {
+                Trail& t = this->myTrails[i];
+                t.setPhero(
+                    std::max(
+                        std::max(
+                            (this->myPers * t.getPhero() +
+                             (1 - this->myPers) * taken[t.n1][t.n2]),
+                            this->myMinPhero
+                        ),
+                        stagnancy / 10.0f
+                    )
+                );
+            }
         }
-        while (stagnantCount < myMaxStag);
+        while (stagnancy < 1.0f);
     }
 }

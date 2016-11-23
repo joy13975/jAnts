@@ -6,12 +6,12 @@
 #include "spec.h"
 #include "savings.h"
 
-#define DEFAULT_ACO_ALPHA           1.0f    //importance of pheromone trace
+#define DEFAULT_ACO_ALPHA           5.0f    //importance of pheromone trace
 #define DEFAULT_ACO_BETA            1.0f    //importance of bias
 #define DEFAULT_ACO_PHEROMONE       1.0f
 #define DEFAULT_ACO_PERSISTENCE     0.975f
-#define DEFAULT_ACO_MIN_PHERO       0.05f
-#define DEFAULT_ACO_NBHOOD          4
+#define DEFAULT_ACO_MIN_PHERO       0.02f
+#define DEFAULT_ACO_NBHOOD          10
 #define DEFAULT_ACO_LAMDA           1
 
 class Ants
@@ -43,8 +43,23 @@ private:
     const int myDim;
     const int myVCap;
 
-    Cache<float> myDists, myPheros;
-    Savings::Savings mySavings;
+    Cache<float> myDists;
+
+    class Trail : public Savings::Saving
+    {
+    public:
+        Trail(const int n1val, const int n2val, const float gainVal)
+            : Saving(n1val, n2val, gainVal) {};
+        virtual ~Trail() {};
+        void setPhero(const float val) { pheromone = val; };
+        float getPhero() const { return pheromone; };
+
+    private:
+        float pheromone = 1.0f;
+    };
+    typedef std::vector<Trail> Trails;
+
+    Trails myTrails;
 
     typedef std::vector<Ints> Paths;
     inline void applyLamdaExchange(Ints& path);
@@ -61,8 +76,7 @@ private:
     } WayPoint;
     typedef std::vector<WayPoint> WayPoints;
     inline Paths wayPointsToPaths(WayPoints localWayPoints);
-    inline WayPoints applySavings(unsigned int& seed,
-                                  Savings::Savings lclSavings);
+    inline WayPoints applySavings(unsigned int& seed, Trails lclTrails);
     inline Paths walk(unsigned int& seed);
 };
 

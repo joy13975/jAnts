@@ -14,7 +14,7 @@ class Route
 {
 public:
     Route(const Nodes& nodes, const int vcap);
-    Route(const Nodes& nodes, const Ints& hops);
+    Route(const Nodes& nodes, const Ints& hops, const int vcap);
     Route(const Nodes& nodes, const int vcap, unsigned int& seed);
     static Route Dummy();
 
@@ -24,6 +24,7 @@ public:
     const Edges& getEdges() const;
     static String genStr(const Ints& hops);
     static Edges genEdges(const Ints& hops);
+    static Ints genAscendHops(const int dim);
 
     float calcRealScore() const;
     float calcFastScore() const;
@@ -51,7 +52,6 @@ private:
     Edges myEdges;
 
     Route() : myNodes(NULL) {};
-    inline Ints genAscendHops();
     inline void insertDepots(const int vcap);
 
     template<typename T>

@@ -18,7 +18,6 @@ void search(Route& bestRoute,
             std::stringstream& dataStream)
 {
     float bestScore = std::numeric_limits<float>::max();
-    const int dim = spec.getDim();
 
     Cache<float> realDists = Score::makeScoreCache(spec.getNodes(), Score::real);
 
@@ -30,7 +29,7 @@ void search(Route& bestRoute,
         for (int i = 0; i < populationSize; i++)
         {
             //generate a random route
-            Route r = Route(spec.getNodes(), tseed);
+            Route r = Route(spec.getNodes(), spec.getVCap(), tseed);
 
             //evaluate route
             float myScore = r.calcScoreWithCache(realDists);
