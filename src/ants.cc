@@ -426,7 +426,9 @@ void Ants::search(Route& bestRoute, const double startTime)
                     100.0f * stagnancy);
                 bestEdges = Edges(bestRoute.getEdges());
                 taken = makeCache(this->myDim, false);
-                this->myStream << itr << " " << std::fixed << std::setprecision(4) << bestScore << "\n";
+                this->myStream << itr
+                               << std::fixed << std::setprecision(4) << secElapsed
+                               << " " << std::fixed << std::setprecision(4) << bestScore << "\n";
             }
 
             // Find edges taken

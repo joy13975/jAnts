@@ -19,6 +19,7 @@
 const argument_format af_help       = {"-h", "--help", 0, "Print help message"};
 const argument_format af_brand      = {"-br", "--basicrand", 0, "Do basic random search"};
 const argument_format af_exc        = {"-ex", "--exchange", 0, "Do basic exchange search"};
+const argument_format af_grid       = {"-gr", "--grid", 0, "Do grid search on ACO"};
 
 const argument_format af_loglv      = {"-lg", "--loglv", 1, "Set log level {0-6}"};
 const argument_format af_input      = {"-i", "--input", 1, "Set input file"};
@@ -53,8 +54,9 @@ float aco_beta                  = DEFAULT_ACO_BETA;
 float aco_pers                  = DEFAULT_ACO_PERSISTENCE;
 float aco_min_phero             = DEFAULT_ACO_MIN_PHERO;
 int aco_nbhood_div              = DEFAULT_ACO_NBHOOD_DIV;
-Route best_route                = Route::Dummy();
 int failure_count               = 0;
+bool do_grid_search             = false;
+Route best_route                = Route::Dummy();
 std::stringstream data_stream;
 
 void print_help_and_exit()
@@ -68,6 +70,7 @@ void print_help_and_exit()
     print_help_arguement(af_help);
     print_help_arguement(af_brand);
     print_help_arguement(af_exc);
+    print_help_arguement(af_grid);
     set_leading_spaces(0);
     raw("       Options:\n");
     set_leading_spaces(8);
@@ -105,6 +108,10 @@ void parse_args(int argc, char *argv[])
         else if (next_arg_matches(af_exc))
         {
             search_mode = MODE_EXCHANGE;
+        }
+        else if (next_arg_matches(af_grid))
+        {
+            do_grid_search = true;
         }
         else if (next_arg_matches(af_loglv))
         {
@@ -237,16 +244,41 @@ int main(int argc, char *argv[])
     }
     case MODE_ACO:
     {
-        msg("Running ACO search\n");
-        Ants(spec,
-             population_size,
-             max_stagnancy,
-             aco_alpha,
-             aco_beta,
-             aco_pers,
-             aco_min_phero,
-             aco_nbhood_div,
-             data_stream).search(best_route, start_time);
+        if (do_grid_search)
+        {
+            const long minPop = 100, popStep = 100, maxPop = 300;
+            const float minAlpha = 1.0f, alphaStep = 1.0f, maxAlpha = 10.0f;
+            const float minBeta = 1.0f, betaStep = 1.0f, maxBeta = 10.0f;
+            const float minPers = 0.8, persStep = 0.01, maxPers = 0.99;
+
+            for (long pop = minPop; pop < maxPop; pop += popStep)
+            {
+                for (float alpha = minAlpha; alpha < maxAlpha; alpha += alphaStep)
+                {
+                    for (int beta = minBeta; beta < maxBeta; beta += betaStep)
+                    {
+
+                        msg("Best cost: %.2f\n", best_route.calcScoreSerious());
+
+                        write_ss(data_output_file, data_stream);
+                        write_solution(output_file, best_route);
+                    }
+                }
+            }
+        }
+        else
+        {
+            msg("Running ACO search\n");
+            Ants(spec,
+                 population_size,
+                 max_stagnancy,
+                 aco_alpha,
+                 aco_beta,
+                 aco_pers,
+                 aco_min_phero,
+                 aco_nbhood_div,
+                 data_stream).search(best_route, start_time);
+        }
         break;
     }
     default:
