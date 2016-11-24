@@ -34,7 +34,7 @@ Savings makeSavings(const Cache<T>& dists)
     for (int i = 1; i < N; i++)
         for (int j = i + 1; j < N; j++)
         {
-            const float gain = (dists[0][i] + dists[0][j] - dists[i][j]);
+            const float gain = dists[i][0] + dists[i][0] - dists[i][j];
             if (gain > GAIN_THRESOLD)
                 S.push_back(Saving(i, j, gain));
         }
@@ -42,7 +42,13 @@ Savings makeSavings(const Cache<T>& dists)
     std::sort(S.begin(), S.end());
 
     // for (int i = 0; i < S.size(); i++)
-    //     dbg("[%d] %d->%d: %.2f\n", i, S[i].n1, S[i].n2, S[i].gain);
+    // {
+    //     if (S[i].n1 == 9)
+    //     {
+    //         dbg("[%d] %d->%d: %.2f (own=%.2f, between=%.2f)\n",
+    //             i, S[i].n1, S[i].n2, S[i].gain, dists[S[i].n1][0], dists[S[i].n1][S[i].n2]);
+    //     }
+    // }
     // die("Here\n");
     return S;
 }

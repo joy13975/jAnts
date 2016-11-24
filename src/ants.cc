@@ -41,6 +41,11 @@ inline void Ants::applyOneExchange(Paths& paths)
         {
             const int node1 = paths[i].hops[j];
 
+            // Calculate sum distance of node1 from its own path
+            float ownSumDist = 0.0f;
+            for (int k = 1; k < paths[i].hops.size() - 1; k++)
+                ownSumDist += this->myDists[node1][paths[i].hops[k]];
+
             int load1, load2;
 
             // For each node, find another path that is
@@ -49,6 +54,9 @@ inline void Ants::applyOneExchange(Paths& paths)
             int nearestPathId = -1, nearestNodeIndex = -1;
             for (int k = 0; k < paths.size(); k++)
             {
+                if (k == i)
+                    continue;
+
                 float sumDist = 0.0f;
                 float minDist = std::numeric_limits<float>::max();
                 int minDistIndex = -1;
@@ -61,7 +69,14 @@ inline void Ants::applyOneExchange(Paths& paths)
                         minDist = dist;
                         minDistIndex = l;
                     }
+                    else if (ownSumDist < sumDist)
+                    {
+                        break;
+                    }
                 }
+
+                if (ownSumDist < sumDist)
+                    continue;
 
                 // Check load compatibility
                 if ((sumDist < minSumDist)
@@ -123,7 +138,7 @@ inline void Ants::applyOneExchange(Paths& paths)
     }
 }
 
-void Ants::applyTwoOpt(Path& path)
+inline void Ants::applyTwoOpt(Path& path)
 {
     // Get tour size
     const int nHops = path.hops.size();
@@ -370,16 +385,12 @@ void Ants::search(Route& bestRoute, const double startTime)
             #pragma omp for
             for (int i = 0; i < this->myPopSize; i++)
             {
-                // Construct a CVRP solution using the Savings based Ant System; (see 3.1)
                 Paths paths = walk(tseed);
 
-                // Improve the CVRP clustering by applying the Swap Local Search; (see 3.2)
                 improvePaths(paths);
-                Route r(myNodes, pathToHops(paths), 0);
-                // dbg("Route: %s\nCost: %.4f\n", r.genStr().c_str(), r.calcScoreSerious());
 
-                // Update the best found solution (if applicable);
-                float myScore = r.calcScoreWithCache(this->myDists);
+                const Route r(myNodes, pathToHops(paths), 0);
+                const float myScore = r.calcScoreWithCache(this->myDists);
                 #pragma omp critical
                 {
                     if (myScore < bestScore)
@@ -400,7 +411,7 @@ void Ants::search(Route& bestRoute, const double startTime)
 
                 itr++;
                 stagnancy = (float) stagnantCount / myMaxStag;
-                msg("itr# %5.d, best %6.4f, time %6.2f, stagnancy %4.2f%%\n",
+                msg("itr# %5.d, best %6.4f, time %6.2f, stagnancy %4.1f%%\n",
                     itr,
                     bestScore,
                     (get_timestamp_us() - startTime) / 1e6,
