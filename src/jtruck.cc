@@ -208,7 +208,8 @@ void on_failure(int sig)
 int main(int argc, char *argv[])
 {
     if (signal(SIGINT, on_failure) == SIG_ERR ||
-            signal(SIGSEGV, on_failure) == SIG_ERR)
+            signal(SIGSEGV, on_failure) == SIG_ERR ||
+            signal(SIGILL, on_failure) == SIG_ERR)
         die("Couldn't hook signal handler\n");
 
     start_time = get_timestamp_us();

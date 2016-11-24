@@ -12,6 +12,7 @@
 #define DEFAULT_ACO_PERSISTENCE     0.975f
 #define DEFAULT_ACO_MIN_PHERO       0.02f
 #define DEFAULT_ACO_NBHOOD_DIV      10
+#define MAX_SECONDS_ALLOWED         (60 * 29) //allow 29 minutes
 
 class Ants
 {
@@ -55,12 +56,14 @@ private:
     {
         Ints hops;
         int load;
+        float cost;
     } Path;
     typedef std::vector<Path> Paths;
     inline void applyOneExchange(Paths& paths);
     inline void applyTwoOpt(Path& path);
     inline void improvePaths(Paths& paths);
     inline Ints pathToHops(const Paths &paths);
+    inline float sumPathCosts(const Paths &paths);
 
     typedef struct WayPoint
     {

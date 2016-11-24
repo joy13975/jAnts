@@ -31,6 +31,7 @@ void search(Route& bestRoute,
 
     while (stag < 20)
     {
+
         for (int i = 0; i < dim - 1; i++)
         {
             for (int j = i + 1; j < dim - 1; j++)
@@ -40,32 +41,41 @@ void search(Route& bestRoute,
 
                 const int node1 = sol[i], node2 = sol[j];
 
-                // // Could putting node i in position j make a better route? (i < j)
-                // Ints newSol1 = Ints(sol.begin(), sol.end());
-                // newSol1.insert(newSol1.begin() + j, node1);
-                // newSol1.erase(newSol1.begin() + i);
-                // const float c1 = Route(nodes, sol, vcap).calcScoreWithCache(myDists);
-                // Route newRoute1 = Route(nodes, newSol1, vcap);
-                // const float c2 = newRoute1.calcScoreWithCache(myDists);
+                // Could putting node i in position j make a better route? (i < j)
+                Ints newSol1 = Ints(sol.begin(), sol.end());
+                newSol1.insert(newSol1.begin() + j, node1);
+                newSol1.erase(newSol1.begin() + i);
+                const float c1 = Route(nodes, sol, vcap).calcScoreWithCache(myDists);
+                Route newRoute1 = Route(nodes, newSol1, vcap);
+                const float c2 = newRoute1.calcScoreWithCache(myDists);
 
-                // // Could putting node j in position i make a better route? (i < j)
-                // Ints newSol2 = Ints(sol.begin(), sol.end());
-                // newSol2.erase(newSol2.begin() + j);
-                // newSol2.insert(newSol2.begin() + i, node2);
-                // Route newRoute2 = Route(nodes, newSol2, vcap);
-                // const float c3 = newRoute2.calcScoreWithCache(myDists);
+                // Could putting node j in position i make a better route? (i < j)
+                Ints newSol2 = Ints(sol.begin(), sol.end());
+                newSol2.erase(newSol2.begin() + j);
+                newSol2.insert(newSol2.begin() + i, node2);
+                Route newRoute2 = Route(nodes, newSol2, vcap);
+                const float c3 = newRoute2.calcScoreWithCache(myDists);
 
-                // bestScore = std::min(std::min(c1, c2), c3);
-                // if (bestScore == c2)
-                // {
-                //     sol = newSol1;
-                //     bestRoute = newRoute1;
-                // }
-                // else if (bestScore == c3)
-                // {
-                //     sol = newSol2;
-                //     bestRoute = newRoute2;
-                // }
+                bestScore = std::min(std::min(c1, c2), c3);
+                if (bestScore == c2)
+                {
+                    sol = newSol1;
+                    bestRoute = newRoute1;
+                }
+                else if (bestScore == c3)
+                {
+                    sol = newSol2;
+                    bestRoute = newRoute2;
+                }
+            }
+        }
+
+        for (int i = 0; i < dim - 1; i++)
+        {
+            for (int j = i + 1; j < dim - 1; j++)
+            {
+                if (i == j)
+                    continue;
 
                 // in order up to i, reverse up to j, then in order
                 Ints newSol = sol;
