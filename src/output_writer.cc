@@ -5,9 +5,7 @@
 #include "output_writer.h"
 #include "util.h"
 
-using namespace std;
-
-void write_solution(const String output_file, const Route& bestRoute)
+void writeSolution(const String output_file, const Route& bestRoute)
 {
     std::stringstream ss;
     //write file header
@@ -17,13 +15,20 @@ void write_solution(const String output_file, const Route& bestRoute)
     ss << "cost " << std::fixed  << std::setprecision(16) << bestRoute.calcScoreSerious() << "\n";
     ss << Route::genStr(bestRoute.getHops());
 
-    write_ss(output_file, ss);
+    writeStrStream(output_file, ss);
 }
 
 
-void write_ss(const String output_file, const std::stringstream& ss)
+void writeStrStream(const String output_file, const std::stringstream& ss)
 {
-    ofstream os(output_file);
+    writeStrStreamMode(output_file, ss);
+}
+
+void writeStrStreamMode(const String output_file,
+                        const std::stringstream& ss,
+                        std::ios_base::openmode mode)
+{
+    std::ofstream os(output_file, mode);
     if (!os.is_open())
         die("Can't open file \"%s\" (%s)\n", output_file.c_str(), get_error_string());
     os << ss.rdbuf();

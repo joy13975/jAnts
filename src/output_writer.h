@@ -6,8 +6,12 @@
 #include "typedefs.h"
 #include "route.h"
 
-void write_solution(const String output_file, const Route& bestRoute);
+void writeSolution(const String output_file, const Route& bestRoute);
 
-void write_ss(const String output_file, const std::stringstream& ss);
+void writeStrStream(const String output_file, const std::stringstream& ss);
+
+void writeStrStreamMode(const String output_file,
+                        const std::stringstream& ss,
+                        std::ios_base::openmode mode = std::ios_base::out);
 
 #endif /* include guard */

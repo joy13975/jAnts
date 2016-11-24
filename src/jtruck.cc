@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
+#include <iomanip>
 
 #include "config.h"
 #include "typedefs.h"
@@ -46,6 +47,7 @@ double start_time               = -1;
 String input_file               = DEFAULT_INPUT_FILE;
 String output_file              = DEFAULT_OUTPUT_FILE;
 String data_output_file         = DEFAULT_DATA_OUTPUT_FILE;
+String grid_output_file         = DEFAULT_GRID_OUTPUT_FILE;
 Search_Mode search_mode         = MODE_ACO;
 long population_size            = DEFAULT_POPULATION_SIZE;
 long max_stagnancy              = DEFAULT_MAX_STAGNANCY;
@@ -187,8 +189,8 @@ void finalise_and_exit(int default_sig)
     {
         msg("Best cost: %.2f\n", best_route.calcScoreSerious());
 
-        write_ss(data_output_file, data_stream);
-        write_solution(output_file, best_route);
+        writeStrStream(data_output_file, data_stream);
+        writeSolution(output_file, best_route);
 
         exit(default_sig);
     }
@@ -246,22 +248,51 @@ int main(int argc, char *argv[])
     {
         if (do_grid_search)
         {
-            const long minPop = 100, popStep = 100, maxPop = 300;
-            const float minAlpha = 1.0f, alphaStep = 1.0f, maxAlpha = 10.0f;
-            const float minBeta = 1.0f, betaStep = 1.0f, maxBeta = 10.0f;
-            const float minPers = 0.8, persStep = 0.01, maxPers = 0.99;
+            const float gridAlphas[]    = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+            const float gridBetas[]     = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+            const float gridPerss[]     = {0.90f, 0.92f, 0.94f, 0.96f, 0.98f, 0.99f};
+            const float gridMinPheros[] = {0.00f, 0.01f, 0.02f, 0.03f, 0.04f, 0.05f};
+            const int gridNBHoodDivs[]  = {3, 4, 5, 7, 9, 11, 13, 15, 20, 25, 30, 50};
 
-            for (long pop = minPop; pop < maxPop; pop += popStep)
+            for (const float& alpha : gridAlphas)
             {
-                for (float alpha = minAlpha; alpha < maxAlpha; alpha += alphaStep)
+                for (const float& beta : gridBetas)
                 {
-                    for (int beta = minBeta; beta < maxBeta; beta += betaStep)
+                    for (const float& pers : gridPerss)
                     {
+                        for (const float& minPhero : gridMinPheros)
+                        {
+                            for (const int& nbhoodDiv : gridNBHoodDivs)
+                            {
+                                msg("Running ACO search\n");
+                                Ants(spec,
+                                     population_size,
+                                     max_stagnancy,
+                                     alpha,
+                                     beta,
+                                     aco_pers,
+                                     minPhero,
+                                     nbhoodDiv,
+                                     data_stream).search(best_route, start_time);
 
-                        msg("Best cost: %.2f\n", best_route.calcScoreSerious());
+                                const float bestCost = best_route.calcScoreSerious();
+                                const double antTime = (get_timestamp_us() - start_time) / 1e6;
+                                msg("Best cost: %.2f in %.2fs\n", bestCost, antTime);
+                                std::stringstream grid_stream;
+                                grid_stream << std::fixed << std::setprecision(1) << alpha << ", "
+                                            << std::fixed << std::setprecision(1) << beta << ", "
+                                            << std::fixed << std::setprecision(2) << pers << ", "
+                                            << std::fixed << std::setprecision(2) << minPhero << ", "
+                                            << nbhoodDiv << ", "
+                                            << std::fixed << std::setprecision(16) << bestCost << ", "
+                                            << std::fixed << std::setprecision(2) << antTime
+                                            << "\n";
 
-                        write_ss(data_output_file, data_stream);
-                        write_solution(output_file, best_route);
+                                writeStrStreamMode(grid_output_file, grid_stream, std::ios_base::app);
+                                writeStrStream(data_output_file, data_stream);
+                                writeSolution(output_file, best_route);
+                            }
+                        }
                     }
                 }
             }

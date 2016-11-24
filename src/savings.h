@@ -31,13 +31,22 @@ Savings makeSavings(const Cache<T>& dists)
 
     Savings S;
     S.reserve(N * N / 2);
+
+    float sumGains = 0.0f;
     for (int i = 1; i < N; i++)
         for (int j = i + 1; j < N; j++)
         {
-            const float gain = dists[i][0] + dists[j][0] - dists[i][j];
+            const float gain = (dists[i][0] + dists[j][0] - dists[i][j]);
             if (gain > GAIN_THRESOLD)
+            {
+                sumGains += gain;
                 S.push_back(Saving(i, j, gain));
+            }
         }
+
+    // Normalise gains so that it is comparable to pheromone [0~1]
+    for (Saving &s : S)
+        s.gain /= sumGains;
 
     std::sort(S.begin(), S.end());
 

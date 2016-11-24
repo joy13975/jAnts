@@ -35,98 +35,107 @@ Ants::Ants(const Spec& spec,
 
 inline void Ants::applyOneExchange(Paths& paths)
 {
-    for (int i = 0; i < paths.size(); i++)
+    bool improved = true;
+
+    int itr = 0;
+    while (improved)
     {
-        const int& path1Idx = i;
-        Ints& path1Hops = paths[i].hops;
+        improved = false;
 
-        for (int j = 1; j < paths[i].hops.size() - 1; j++)
+        for (int i = 0; i < paths.size(); i++)
         {
-            // For each node, find another path that is
-            // on average closer than its current path
-            const int node1Idx = j;
-            const int node1 = path1Hops[node1Idx];
+            const int& path1Idx = i;
+            Ints& path1Hops = paths[i].hops;
 
-            // Calculate sum distance of node1 from its own path
-            float ownSumDist = 0.0f;
-            for (int k = 1; k < path1Hops.size() - 1; k++)
-                ownSumDist += this->myDists[node1][path1Hops[k]];
-
-            int load1, load2;
-            float minSumDist = ownSumDist;
-            int path2Idx = -1, node2Idx = -1;
-            for (int k = 0; k < paths.size(); k++)
+            for (int j = 1; j < paths[i].hops.size() - 1; j++)
             {
-                if (k == i)
-                    continue;
+                // For each node, find another path that is
+                // on average closer than its current path
+                const int node1Idx = j;
+                const int node1 = path1Hops[node1Idx];
 
-                float sumDist = 0.0f;
-                float minDist = std::numeric_limits<float>::max();
-                int minDistIndex = -1;
-                for (int l = 1; l < paths[k].hops.size() - 1; l++)
+                // Calculate sum distance of node1 from its own path
+                float ownSumDist = 0.0f;
+                for (int k = 1; k < path1Hops.size() - 1; k++)
+                    ownSumDist += this->myDists[node1][path1Hops[k]];
+
+                int load1, load2;
+                float minSumDist = ownSumDist;
+                int path2Idx = -1, node2Idx = -1;
+                for (int k = 0; k < paths.size(); k++)
                 {
-                    const float dist = this->myDists[node1][paths[k].hops[l]];
+                    if (k == i)
+                        continue;
 
-                    if ((sumDist += dist) > minSumDist)
-                        break;
-
-                    if (dist < minDist)
+                    float sumDist = 0.0f;
+                    float minDist = std::numeric_limits<float>::max();
+                    int minDistIndex = -1;
+                    for (int l = 1; l < paths[k].hops.size() - 1; l++)
                     {
-                        minDist = dist;
-                        minDistIndex = l;
+                        const float dist = this->myDists[node1][paths[k].hops[l]];
+
+                        if ((sumDist += dist) > minSumDist)
+                            break;
+
+                        if (dist < minDist)
+                        {
+                            minDist = dist;
+                            minDistIndex = l;
+                        }
+                    }
+
+                    // Check load compatibility
+                    if ((sumDist < minSumDist)
+                            &&
+                            ((load1 =
+                                  paths[path1Idx].load - this->myNodes[node1].z +
+                                  this->myNodes[paths[k].hops[minDistIndex]].z)
+                             <= this->myVCap)
+                            &&
+                            ((load2 =
+                                  paths[k].load + this->myNodes[node1].z -
+                                  this->myNodes[paths[k].hops[minDistIndex]].z)
+                             <= this->myVCap))
+                    {
+                        minSumDist = sumDist;
+                        path2Idx = k;
+                        node2Idx = minDistIndex;
                     }
                 }
 
-                // Check load compatibility
-                if ((sumDist < minSumDist)
-                        &&
-                        ((load1 =
-                              paths[path1Idx].load - this->myNodes[node1].z +
-                              this->myNodes[paths[k].hops[minDistIndex]].z)
-                         <= this->myVCap)
-                        &&
-                        ((load2 =
-                              paths[k].load + this->myNodes[node1].z -
-                              this->myNodes[paths[k].hops[minDistIndex]].z)
-                         <= this->myVCap))
+                if (path2Idx != i && path2Idx != -1)
                 {
-                    minSumDist = sumDist;
-                    path2Idx = k;
-                    node2Idx = minDistIndex;
-                }
-            }
+                    Ints& path2Hops = paths[path2Idx].hops;
+                    const int node2 = path2Hops[node2Idx];
 
-            if (path2Idx != i && path2Idx != -1)
-            {
-                Ints& path2Hops = paths[path2Idx].hops;
-                const int node2 = path2Hops[node2Idx];
+                    // paths[path2Idx] might be a better home for node1,
+                    // and paths[k][node2Idx] is the best candidate for swapping
+                    const float oldPath1Cost = paths[path1Idx].cost;
+                    const float oldPath2Cost = paths[path2Idx].cost;
+                    const float oldCostSum = oldPath1Cost + oldPath2Cost;
 
-                // paths[path2Idx] might be a better home for node1,
-                // and paths[k][node2Idx] is the best candidate for swapping
-                const float oldPath1Cost = paths[path1Idx].cost;
-                const float oldPath2Cost = paths[path2Idx].cost;
-                const float oldCostSum = oldPath1Cost + oldPath2Cost;
+                    const float newPath1CostDiff = - this->myDists[path1Hops[node1Idx - 1]][node1]
+                                                   - this->myDists[node1][path1Hops[node1Idx + 1]]
+                                                   + this->myDists[path1Hops[node1Idx - 1]][node2]
+                                                   + this->myDists[node2][path1Hops[node1Idx + 1]];
+                    const float newPath1Cost = oldPath1Cost + newPath1CostDiff;
+                    const float newPath2CostDiff = - this->myDists[path2Hops[node2Idx - 1]][node2]
+                                                   - this->myDists[node2][path2Hops[node2Idx + 1]]
+                                                   + this->myDists[path2Hops[node2Idx - 1]][node1]
+                                                   + this->myDists[node1][path2Hops[node2Idx + 1]];
+                    const float newPath2Cost = oldPath2Cost + newPath2CostDiff;
+                    const float newCostSum = newPath1Cost + newPath2Cost;
 
-                const float newPath1CostDiff = - this->myDists[path1Hops[node1Idx - 1]][node1]
-                                               - this->myDists[node1][path1Hops[node1Idx + 1]]
-                                               + this->myDists[path1Hops[node1Idx - 1]][node2]
-                                               + this->myDists[node2][path1Hops[node1Idx + 1]];
-                const float newPath1Cost = oldPath1Cost + newPath1CostDiff;
-                const float newPath2CostDiff = - this->myDists[path2Hops[node2Idx - 1]][node2]
-                                               - this->myDists[node2][path2Hops[node2Idx + 1]]
-                                               + this->myDists[path2Hops[node2Idx - 1]][node1]
-                                               + this->myDists[node1][path2Hops[node2Idx + 1]];
-                const float newPath2Cost = oldPath2Cost + newPath2CostDiff;
-                const float newCostSum = newPath1Cost + newPath2Cost;
-
-                if (newCostSum < oldCostSum)
-                {
-                    path1Hops[node1Idx] = node2;
-                    paths[path1Idx].load = load1;
-                    paths[path1Idx].cost = newPath1Cost;
-                    path2Hops[node2Idx] = node1;
-                    paths[path2Idx].load = load2;
-                    paths[path2Idx].cost = newPath2Cost;
+                    if (newCostSum < oldCostSum)
+                    {
+                        path1Hops[node1Idx] = node2;
+                        paths[path1Idx].load = load1;
+                        paths[path1Idx].cost = newPath1Cost;
+                        path2Hops[node2Idx] = node1;
+                        paths[path2Idx].load = load2;
+                        paths[path2Idx].cost = newPath2Cost;
+                        improved = true;
+                    }
                 }
             }
         }
@@ -182,6 +191,7 @@ inline Ints Ants::pathToHops(const Paths &paths)
 {
     Ints hops;
 
+    #pragma omp simd
     for (int i = 0; i < paths.size(); i++)
         hops.insert(hops.end(),
                     paths[i].hops.begin(),
@@ -249,6 +259,8 @@ inline Ants::Paths Ants::wayPointsToPaths(WayPoints localWayPoints)
 inline Ants::WayPoints Ants::applySavings(unsigned int& seed, Trails lclTrails)
 {
     WayPoints wayPoints = WayPoints(this->myDim);
+
+    #pragma omp simd
     for (int i = 1; i < this->myDim; i++)
     {
         wayPoints[i] = {0, 0, this->myNodes[i].z, 0};
@@ -263,6 +275,7 @@ inline Ants::WayPoints Ants::applySavings(unsigned int& seed, Trails lclTrails)
         Floats cmlProbs = Floats(cmlProbsSize, 0.0f);
         float probSum = 0.0f;
 
+        #pragma omp simd
         for (int i = 0; i < cmlProbsSize; i++)
         {
             const Trail& s = lclTrails[i];
@@ -369,7 +382,7 @@ void Ants::search(Route& bestRoute, const double startTime)
     float prevBestScore = bestScore;
     long stagnantCount = 0;
     int itr = 0;
-    float stagnancy;
+    float stagnancy, currMinPhero;
     double secElapsed = 0;
     Edges bestEdges;
     Cache<bool> taken;
@@ -410,25 +423,8 @@ void Ants::search(Route& bestRoute, const double startTime)
 
             #pragma omp single
             {
-                if (bestScore == prevBestScore)
-                    stagnantCount++;
-                else
-                    stagnantCount = 0;
-                prevBestScore = bestScore;
-
-                itr++;
-                stagnancy = (float) stagnantCount / myMaxStag;
-                secElapsed = (get_timestamp_us() - startTime) / 1e6;
-                msg("itr# %5.d, best %6.4f, time %6.2f, stagnancy %4.1f%%\n",
-                    itr,
-                    bestScore,
-                    secElapsed,
-                    100.0f * stagnancy);
                 bestEdges = Edges(bestRoute.getEdges());
                 taken = makeCache(this->myDim, false);
-                this->myStream << itr
-                               << std::fixed << std::setprecision(4) << secElapsed
-                               << " " << std::fixed << std::setprecision(4) << bestScore << "\n";
             }
 
             // Find edges taken
@@ -440,13 +436,37 @@ void Ants::search(Route& bestRoute, const double startTime)
             }
 
             // Update pheromones
-            #pragma omp for
+            #pragma omp for reduction(min: currMinPhero)
             for (int i = 0; i < this->myTrails.size(); i++)
             {
                 Trail& t = this->myTrails[i];
                 t.pheromone = std::max((this->myPers * t.pheromone +
                                         (1 - this->myPers) * taken[t.n1][t.n2]),
                                        this->myMinPhero);
+                if (t.pheromone < currMinPhero)
+                    currMinPhero = t.pheromone;
+            }
+
+            #pragma omp single
+            {
+                if (bestScore == prevBestScore)
+                    stagnantCount++;
+                else
+                    stagnantCount = 0;
+                prevBestScore = bestScore;
+
+                itr++;
+                stagnancy = (float) stagnantCount / myMaxStag;
+                secElapsed = (get_timestamp_us() - startTime) / 1e6;
+                msg("itr %5d, best %6.4f, time %6.2f, currMinPhero %3.2f, stagnancy %3.1f%%\n",
+                    itr,
+                    bestScore,
+                    secElapsed,
+                    currMinPhero,
+                    100.0f * stagnancy);
+                this->myStream << itr
+                               << std::fixed << std::setprecision(4) << secElapsed
+                               << " " << std::fixed << std::setprecision(4) << bestScore << "\n";
             }
         }
         while (stagnancy < 1.0f && secElapsed < MAX_SECONDS_ALLOWED);
