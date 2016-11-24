@@ -39,6 +39,8 @@ inline void Ants::applyOneExchange(Paths& paths)
     {
         for (int j = 1; j < paths[i].hops.size() - 1; j++)
         {
+            // For each node, find another path that is
+            // on average closer than its current path
             const int node1 = paths[i].hops[j];
 
             // Calculate sum distance of node1 from its own path
@@ -47,10 +49,7 @@ inline void Ants::applyOneExchange(Paths& paths)
                 ownSumDist += this->myDists[node1][paths[i].hops[k]];
 
             int load1, load2;
-
-            // For each node, find another path that is
-            // on average closer than its current path
-            float minSumDist = std::numeric_limits<float>::max();
+            float minSumDist = ownSumDist;
             int nearestPathId = -1, nearestNodeIndex = -1;
             for (int k = 0; k < paths.size(); k++)
             {
@@ -63,20 +62,16 @@ inline void Ants::applyOneExchange(Paths& paths)
                 for (int l = 1; l < paths[k].hops.size() - 1; l++)
                 {
                     const float dist = this->myDists[node1][paths[k].hops[l]];
-                    sumDist += dist;
+
+                    if ((sumDist += dist) > minSumDist)
+                        break;
+
                     if (dist < minDist)
                     {
                         minDist = dist;
                         minDistIndex = l;
                     }
-                    else if (ownSumDist < sumDist)
-                    {
-                        break;
-                    }
                 }
-
-                if (ownSumDist < sumDist)
-                    continue;
 
                 // Check load compatibility
                 if ((sumDist < minSumDist)

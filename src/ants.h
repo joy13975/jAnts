@@ -6,12 +6,12 @@
 #include "spec.h"
 #include "savings.h"
 
-#define DEFAULT_ACO_ALPHA           4.0f    //importance of savings bias
+#define DEFAULT_ACO_ALPHA           5.0f    //importance of savings bias
 #define DEFAULT_ACO_BETA            1.0f    //importance of pheromone
 #define DEFAULT_ACO_PHEROMONE       1.0f
-#define DEFAULT_ACO_PERSISTENCE     0.985f
+#define DEFAULT_ACO_PERSISTENCE     0.975f
 #define DEFAULT_ACO_MIN_PHERO       0.02f
-#define DEFAULT_ACO_NBHOOD_DIV      15
+#define DEFAULT_ACO_NBHOOD_DIV      10
 
 class Ants
 {

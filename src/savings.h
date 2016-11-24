@@ -34,7 +34,7 @@ Savings makeSavings(const Cache<T>& dists)
     for (int i = 1; i < N; i++)
         for (int j = i + 1; j < N; j++)
         {
-            const float gain = dists[i][0] + dists[i][0] - dists[i][j];
+            const float gain = dists[i][0] + dists[j][0] - dists[i][j];
             if (gain > GAIN_THRESOLD)
                 S.push_back(Saving(i, j, gain));
         }
