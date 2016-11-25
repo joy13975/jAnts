@@ -20,7 +20,7 @@
 const argument_format af_help       = {"-h", "--help", 0, "Print help message"};
 const argument_format af_brand      = {"-br", "--basicrand", 0, "Do basic random search"};
 const argument_format af_exc        = {"-ex", "--exchange", 0, "Do basic exchange search"};
-const argument_format af_grid       = {"-gr", "--grid", 1, "Do grid search on ACO from index"};
+const argument_format af_grid       = {"-gr", "--grid", 2, "Do grid search on ACO with index range"};
 
 const argument_format af_loglv      = {"-lg", "--loglv", 1, "Set log level {0-6}"};
 const argument_format af_input      = {"-i", "--input", 1, "Set input file"};
@@ -57,7 +57,7 @@ float aco_pers                  = DEFAULT_ACO_PERSISTENCE;
 float aco_min_phero             = DEFAULT_ACO_MIN_PHERO;
 int aco_nbhood_div              = DEFAULT_ACO_NBHOOD_DIV;
 int failure_count               = 0;
-int grid_serach_start_index     = 0;
+int grid_serach_range[2]        = {0, -1};
 bool do_grid_search             = false;
 Route best_route                = Route::Dummy();
 std::stringstream data_stream;
@@ -115,7 +115,8 @@ void parse_args(int argc, char *argv[])
         else if (next_arg_matches(af_grid))
         {
             do_grid_search = true;
-            grid_serach_start_index = parse_long(next_arg());
+            grid_serach_range[0] = parse_long(next_arg());
+            grid_serach_range[1] = parse_long(next_arg());
         }
         else if (next_arg_matches(af_loglv))
         {
@@ -269,9 +270,21 @@ int main(int argc, char *argv[])
                                      gridPerss.size() *
                                      gridMinPheros.size() *
                                      gridNBHoodDivs.size();
+            if (grid_serach_range[1] == -1 || grid_serach_range[1] > maxGridIndex)
+            {
+                grid_serach_range[1] = maxGridIndex;
+                if (grid_serach_range[1] > maxGridIndex)
+                    wrn("Invalid ending index: %d\n", grid_serach_range[1]);
+            }
 
-            for (int gridIndex = grid_serach_start_index;
-                    gridIndex < maxGridIndex;
+            if (grid_serach_range[0] < 0)
+            {
+                grid_serach_range[0] = 0;
+                wrn("Invalid starting index: %d\n", grid_serach_range[0]);
+            }
+
+            for (int gridIndex = grid_serach_range[0];
+                    gridIndex < grid_serach_range[1];
                     gridIndex++)
             {
                 int tmp = gridIndex;
