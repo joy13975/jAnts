@@ -425,6 +425,7 @@ void Ants::search(Route& bestRoute, const double startTime)
             {
                 bestEdges = Edges(bestRoute.getEdges());
                 taken = makeCache(this->myDim, false);
+                currMinPhero = std::numeric_limits<float>::max();
             }
 
             // Find edges taken

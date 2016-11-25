@@ -248,51 +248,75 @@ int main(int argc, char *argv[])
     {
         if (do_grid_search)
         {
-            const float gridAlphas[]    = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-            const float gridBetas[]     = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-            const float gridPerss[]     = {0.90f, 0.92f, 0.94f, 0.96f, 0.98f, 0.99f};
-            const float gridMinPheros[] = {0.00f, 0.01f, 0.02f, 0.03f, 0.04f, 0.05f};
-            const int gridNBHoodDivs[]  = {3, 4, 5, 10, 15, 20, 30};
+            msg("Running grid search\n");
+            const std::array<std::array<float, 2>, 7> gridAB = {{
+                    {{1.0f, 1.0f}},
+                    {{1.0f, 2.0f}},
+                    {{1.0f, 4.0f}},
+                    {{1.0f, 8.0f}},
+                    {{2.0f, 1.0f}},
+                    {{4.0f, 1.0f}},
+                    {{8.0f, 1.0f}}
+                }
+            };
+            const std::array<float, 5> gridPerss     = {0.80f, 0.85f, 0.90f, 0.95f, 0.99f};
+            const std::array<float, 5> gridMinPheros = {0.00f, 0.01f, 0.02f, 0.03f, 0.05f};
+            const std::array<int, 6> gridNBHoodDivs  = {3, 4, 5, 10, 20, 30};
 
-            for (const float& alpha : gridAlphas)
+            const int maxGridIndex = gridAB.size() *
+                                     gridPerss.size() *
+                                     gridMinPheros.size() *
+                                     gridNBHoodDivs.size();
+
+            for (int gridIndex = 0; gridIndex < maxGridIndex; gridIndex++)
             {
-                for (const float& beta : gridBetas)
+                int tmp = gridIndex;
+                const int nbhoodIndex = tmp % gridNBHoodDivs.size();
+                const int minPherosIndex = (tmp /= gridNBHoodDivs.size()) %
+                                           gridMinPheros.size();
+                const int perssIndex = (tmp /= gridMinPheros.size()) %
+                                       gridPerss.size();
+                const int abIndex = (tmp /= gridPerss.size()) %
+                                    gridAB.size();
+
+                start_time = get_timestamp_us();
+                Ants(spec,
+                     population_size,
+                     max_stagnancy,
+                     gridAB[abIndex][0],
+                     gridAB[abIndex][1],
+                     gridPerss[perssIndex],
+                     gridMinPheros[minPherosIndex],
+                     gridNBHoodDivs[nbhoodIndex],
+                     data_stream).search(best_route, start_time);
+
+                const float bestCost = best_route.calcScoreSerious();
+                const double antTime = (get_timestamp_us() - start_time) / 1e6;
+                msg("Best cost: %.2f in %.2fs\n", bestCost, antTime);
+                std::stringstream grid_stream;
+                grid_stream << std::fixed << std::setprecision(1) << gridAB[abIndex][0] << ", "
+                            << std::fixed << std::setprecision(1) << gridAB[abIndex][1] << ", "
+                            << std::fixed << std::setprecision(2) << gridPerss[perssIndex] << ", "
+                            << std::fixed << std::setprecision(2) << gridMinPheros[minPherosIndex] << ", "
+                            << gridNBHoodDivs[nbhoodIndex] << ", "
+                            << std::fixed << std::setprecision(16) << bestCost << ", "
+                            << std::fixed << std::setprecision(2) << antTime << ", "
+                            << gridIndex << "\n";
+
+                writeStrStreamMode(grid_output_file, grid_stream, std::ios_base::app);
+                writeStrStream(data_output_file, data_stream);
+                writeSolution(output_file, best_route);
+            }
+
+            for (const std::array<float, 2> (&AB) : gridAB)
+            {
+                for (const float& pers : gridPerss)
                 {
-                    for (const float& pers : gridPerss)
+                    for (const float& minPhero : gridMinPheros)
                     {
-                        for (const float& minPhero : gridMinPheros)
+                        for (const int& nbhoodDiv : gridNBHoodDivs)
                         {
-                            for (const int& nbhoodDiv : gridNBHoodDivs)
-                            {
-                                start_time = get_timestamp_us();
-                                msg("Running ACO search\n");
-                                Ants(spec,
-                                     population_size,
-                                     max_stagnancy,
-                                     alpha,
-                                     beta,
-                                     aco_pers,
-                                     minPhero,
-                                     nbhoodDiv,
-                                     data_stream).search(best_route, start_time);
 
-                                const float bestCost = best_route.calcScoreSerious();
-                                const double antTime = (get_timestamp_us() - start_time) / 1e6;
-                                msg("Best cost: %.2f in %.2fs\n", bestCost, antTime);
-                                std::stringstream grid_stream;
-                                grid_stream << std::fixed << std::setprecision(1) << alpha << ", "
-                                            << std::fixed << std::setprecision(1) << beta << ", "
-                                            << std::fixed << std::setprecision(2) << pers << ", "
-                                            << std::fixed << std::setprecision(2) << minPhero << ", "
-                                            << nbhoodDiv << ", "
-                                            << std::fixed << std::setprecision(16) << bestCost << ", "
-                                            << std::fixed << std::setprecision(2) << antTime
-                                            << "\n";
-
-                                writeStrStreamMode(grid_output_file, grid_stream, std::ios_base::app);
-                                writeStrStream(data_output_file, data_stream);
-                                writeSolution(output_file, best_route);
-                            }
                         }
                     }
                 }
