@@ -35,6 +35,8 @@ if [[ "$yesno" != "yes" ]]; then
 	exit
 fi
 
+# Convert lines of hostnames into array
+free_hosts=( $free_hosts )
 for ((i=0;i<$maxMachines;i++)); do
 	a=$(( $startIdx + ($step * $i) ))
 	b=$(( $a + $step ))
