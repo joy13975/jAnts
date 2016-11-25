@@ -252,7 +252,7 @@ int main(int argc, char *argv[])
             const float gridBetas[]     = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
             const float gridPerss[]     = {0.90f, 0.92f, 0.94f, 0.96f, 0.98f, 0.99f};
             const float gridMinPheros[] = {0.00f, 0.01f, 0.02f, 0.03f, 0.04f, 0.05f};
-            const int gridNBHoodDivs[]  = {3, 4, 5, 7, 9, 11, 13, 15, 20, 25, 30, 50};
+            const int gridNBHoodDivs[]  = {3, 4, 5, 10, 15, 20, 30};
 
             for (const float& alpha : gridAlphas)
             {
@@ -264,6 +264,7 @@ int main(int argc, char *argv[])
                         {
                             for (const int& nbhoodDiv : gridNBHoodDivs)
                             {
+                                start_time = get_timestamp_us();
                                 msg("Running ACO search\n");
                                 Ants(spec,
                                      population_size,
