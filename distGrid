@@ -7,11 +7,6 @@ echo ${free_hosts[@]}
 
 echo "Enter starting index: "
 read startIdx
-if [[ -z "$startIdx" ]]; then
-	echo "WTF"
-	exit
-fi
-
 echo "Enter ending index: "
 read endIdx
 echo "Use first N machines: "
