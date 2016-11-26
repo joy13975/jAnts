@@ -1,1 +1,1 @@
-make test ARGS="-p 100 -mxs 300 -a 5 -nd 15 -ps 0.99 -mnp 0.02"
+-p 1024 -mxs 300 -a 8.0 -b 1.0 -ps 0.87 -mnp -0.02 -nd 25
