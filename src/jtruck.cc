@@ -252,19 +252,17 @@ int main(int argc, char *argv[])
         if (do_grid_search)
         {
             msg("Running grid search\n");
-            const std::array<std::array<float, 2>, 7> gridAB = {{
-                    {{1.0f, 1.0f}},
-                    {{1.0f, 2.0f}},
-                    {{1.0f, 4.0f}},
-                    {{1.0f, 8.0f}},
-                    {{2.0f, 1.0f}},
+            const std::array<std::array<float, 2>, 6> gridAB = {{
                     {{4.0f, 1.0f}},
-                    {{8.0f, 1.0f}}
-                }
-            };
-            const std::array<float, 5> gridPerss     = {0.80f, 0.85f, 0.90f, 0.95f, 0.99f};
-            const std::array<float, 5> gridMinPheros = {0.00f, 0.01f, 0.02f, 0.03f, 0.05f};
-            const std::array<int, 6> gridNBHoodDivs  = {3, 4, 5, 10, 20, 30};
+                    {{8.0f, 1.0f}},
+                    {{12.0f, 1.0f}},
+                    {{20.0f, 1.0f}},
+                    {{32.0f, 1.0f}},
+                    {{64.0f, 1.0f}}
+                }};
+            const std::array<float, 6> gridPerss     = {0.83f, 0.85f, 0.87f, 0.98f, 0.99f, 0.995f};
+            const std::array<float, 6> gridMinPheros = {0.00f, 0.005f, 0.01f, 0.015f, 0.02f, 0.025f};
+            const std::array<int, 5> gridNBHoodDivs  = {25, 30, 40, 50, 80};
 
             const int maxGridIndex = gridAB.size() *
                                      gridPerss.size() *
