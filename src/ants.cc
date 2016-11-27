@@ -21,11 +21,12 @@ Ants::Ants(const Spec& spec,
            const float pers,
            const float minPhero,
            const int nbhoodDiv,
-           std::stringstream& dataStream)
+           std::stringstream& dataStream,
+           const long timeLimSec)
     : mySpec(spec), myPopSize(popSize), myMaxStag(maxStag),
       myAlpha(alpha), myBeta(beta), myPers(pers), myMinPhero(minPhero),
       myNBHood(spec.getDim() / nbhoodDiv),
-      myStream(dataStream),
+      myStream(dataStream), myTimeLimSec(timeLimSec),
       myNodes(spec.getNodes()), myDim(spec.getDim()), myVCap(spec.getVCap())
 {
     this->myDists  = Score::makeScoreCache(this->myNodes, Score::real);
@@ -359,19 +360,20 @@ void Ants::search(Route& bestRoute, const double startTime)
     Cache<bool> taken;
 
     msg("ACO settings: \n");
-    raw_at(LOG_MESSAGE, "alpha:     %.3f\n",    this->myAlpha);
-    raw_at(LOG_MESSAGE, "beta:      %.3f\n",    this->myBeta);
-    raw_at(LOG_MESSAGE, "pers:      %.3f\n",    this->myPers);
-    raw_at(LOG_MESSAGE, "minPhero:  %.3f\n",    this->myMinPhero);
-    raw_at(LOG_MESSAGE, "nbhood:    %d\n",      this->myNBHood);
-    raw_at(LOG_MESSAGE, "popSize:   %ld\n",     this->myPopSize);
-    raw_at(LOG_MESSAGE, "maxStag:   %ld\n",     this->myMaxStag);
+    raw_at(LOG_MESSAGE, "alpha:         %.3f\n",    this->myAlpha);
+    raw_at(LOG_MESSAGE, "beta:          %.3f\n",    this->myBeta);
+    raw_at(LOG_MESSAGE, "pers:          %.3f\n",    this->myPers);
+    raw_at(LOG_MESSAGE, "minPhero:      %.3f\n",    this->myMinPhero);
+    raw_at(LOG_MESSAGE, "nbhood:        %d\n",      this->myNBHood);
+    raw_at(LOG_MESSAGE, "popSize:       %ld\n",     this->myPopSize);
+    raw_at(LOG_MESSAGE, "maxStag:       %ld\n",     this->myMaxStag);
+    raw_at(LOG_MESSAGE, "timeLimSec:    %ld\n",     this->myTimeLimSec);
 
     #pragma omp parallel
     {
         unsigned int tseed = this->mySpec.rand_seed + omp_get_thread_num();
 
-        while (secElapsed < MAX_SECONDS_ALLOWED)
+        while (secElapsed < this->myTimeLimSec)
         {
             #pragma omp for
             for (int i = 0; i < this->myPopSize; i++)

@@ -13,6 +13,6 @@
 #define DEFAULT_GRID_OUTPUT_FILE    "grid.txt"
 #define DEFAULT_POPULATION_SIZE     128
 #define DEFAULT_MAX_STAGNANCY       150
-#define MAX_SECONDS_ALLOWED         (60 * 360) //allow 29 minutes
+#define DEFAULT_TIME_LIMIT_SEC      (60 * 999999) //some large number
 
 #endif /* include guard */

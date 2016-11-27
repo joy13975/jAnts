@@ -24,7 +24,8 @@ public:
          const float pers,
          const float minPhero,
          const int nbhood,
-         std::stringstream& dataStream);
+         std::stringstream& dataStream,
+         const long timeLimSec);
     virtual ~Ants() {};
     void search(Route& bestRoute, const double startTime);
 
@@ -35,6 +36,7 @@ private:
     const float myAlpha, myBeta, myPers, myMinPhero;
     const int myNBHood;
     std::stringstream& myStream;
+    const long myTimeLimSec;
 
     const Nodes& myNodes;
     const int myDim;

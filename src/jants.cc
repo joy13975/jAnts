@@ -28,6 +28,7 @@ const argument_format af_loglv      = {"-lg", "--loglv", 1, "Set log level {0-4}
 const argument_format af_input      = {"-i", "--input", 1, "Set input file"};
 const argument_format af_output     = {"-o", "--output", 1, "Set output file (or \"stdout\")"};
 const argument_format af_seed       = {"-rs", "--randseed", 1, "Set starting RNG seed"};
+const argument_format af_tlim       = {"-tl", "--timelimit", 1, "Set time limit in minutes"};
 const argument_format af_pop        = {"-p", "--population", 1, "Set population size"};
 const argument_format af_stg        = {"-mxs", "--maxstagnancy", 1, "Set stopping stagnant iterations"};
 const argument_format af_alpha      = {"-a", "--alpha", 1, "Set importance of distance in ACO"};
@@ -60,6 +61,7 @@ float aco_min_phero             = DEFAULT_ACO_MIN_PHERO;
 int aco_nbhood_div              = DEFAULT_ACO_NBHOOD_DIV;
 int failure_count               = 0;
 int grid_serach_range[2]        = {0, -1};
+long time_limt_sec              = DEFAULT_TIME_LIMIT_SEC;
 bool do_grid_search             = false;
 Route best_route                = Route::Dummy();
 std::stringstream data_stream;
@@ -83,6 +85,7 @@ void print_help_and_exit()
     print_help_arguement(af_input);
     print_help_arguement(af_output);
     print_help_arguement(af_seed);
+    print_help_arguement(af_tlim);
     print_help_arguement(af_pop);
     print_help_arguement(af_stg);
     print_help_arguement(af_alpha);
@@ -136,6 +139,10 @@ void parse_args(int argc, char *argv[])
         else if (next_arg_matches(af_seed))
         {
             rand_seed = parse_long(next_arg());
+        }
+        else if (next_arg_matches(af_tlim))
+        {
+            time_limt_sec = 60 * parse_long(next_arg());
         }
         else if (next_arg_matches(af_pop))
         {
@@ -324,7 +331,8 @@ int main(int argc, char *argv[])
                      gridPerss[perssIndex],
                      gridMinPheros[minPherosIndex],
                      gridNBHoodDivs[nbhoodIndex],
-                     data_stream).search(best_route, start_time);
+                     data_stream,
+                     time_limt_sec).search(best_route, start_time);
 
                 const float bestCost = best_route.calcScoreSerious();
                 const double antTime = (get_timestamp_us() - start_time) / 1e6;
@@ -369,7 +377,8 @@ int main(int argc, char *argv[])
                  aco_pers,
                  aco_min_phero,
                  aco_nbhood_div,
-                 data_stream).search(best_route, start_time);
+                 data_stream,
+                 time_limt_sec).search(best_route, start_time);
         }
         break;
     }

@@ -1,2 +1,2 @@
-cvrp-runtime-in-minutes ??
-note-for-marker N/A
+cvrp-runtime-in-minutes 10
+note-for-marker My code optimises the solution forever, but has been capped at 10 minutes for marking. It should produce a cost of ~5568 at 10m, with ~5583 at 5m. You can interrupt and still get the output in stdout.
