@@ -1,8 +1,8 @@
 #!/bin/bash
 
-free_hosts=$(scanFreeHosts jtruck)
+free_hosts=$(scanFreeHosts jants)
 n_free_hosts=$(echo "${free_hosts[@]}" | wc -w)
-echo "There are $n_free_hosts jtruck-free hosts:"
+echo "There are $n_free_hosts jants-free hosts:"
 echo ${free_hosts[@]}
 
 echo "Enter starting index: "
@@ -40,7 +40,7 @@ for ((i=0;i<$maxMachines;i++)); do
 	fi
 
 	host=${free_hosts[$i]}
-	job="cd src/JTruck; screen -dm ./jtruck -gr $a $b"
+	job="cd src/jants; screen -dm ./jants -gr $a $b"
 	cmd="goto $host "'"'$job'"'
 
 	echo "Sending range $a ~ $b to $host"

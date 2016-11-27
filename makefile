@@ -1,4 +1,4 @@
-EXE=jtruck
+EXE=jants
 CC=g++
 CFLAGS=-MMD -std=c++11 -O3 -fopenmp -g3
 DEFS=
@@ -8,7 +8,7 @@ RUN_REAL_ARGS=
 SRC_DIR:=src
 OBJ_DIR=.obj
 $(shell mkdir -p $(OBJ_DIR))
-C_SRC := jtruck.c util.c
+C_SRC := jants.c util.c
 CC_SRC:= spec.cc route.cc solution.cc input_parser.cc \
 	jrng.cc score.cc basic_random.cc output_writer.cc \
 	ants.cc basic_exchange.cc

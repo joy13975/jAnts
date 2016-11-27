@@ -155,7 +155,7 @@ inline void Ants::improvePaths(Paths& paths)
     for (Path& p : paths)
         applyTwoOpt(p);
 
-    applyOneExchange(paths);
+    // applyOneExchange(paths);
 }
 
 inline Ints Ants::pathToHops(const Paths &paths)
@@ -371,7 +371,7 @@ void Ants::search(Route& bestRoute, const double startTime)
     {
         unsigned int tseed = this->mySpec.rand_seed + omp_get_thread_num();
 
-        while (stagnancy < 1.0f && secElapsed < MAX_SECONDS_ALLOWED)
+        while (secElapsed < MAX_SECONDS_ALLOWED)
         {
             #pragma omp for
             for (int i = 0; i < this->myPopSize; i++)

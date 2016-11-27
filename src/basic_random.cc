@@ -32,7 +32,7 @@ void search(Route& bestRoute,
             Route r = Route(spec.getNodes(), spec.getVCap(), tseed);
 
             //evaluate route
-            float myScore = r.calcScoreWithCache(realDists);
+            const float myScore = r.calcScoreWithCache(realDists);
 
             #pragma omp critical
             {
