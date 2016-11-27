@@ -64,10 +64,10 @@ std::stringstream data_stream;
 
 void print_help_and_exit()
 {
-    raw("----------------------\n");
-    raw("JTruck - A CVRP solver\n");
-    raw("----------------------\n");
-    raw("Usage: ./jtruck [COMMANDS] [OPTIONS]\n");
+    raw("------------------------------------\n");
+    raw("jAnts - Joy's CVRP solver using ACO\n");
+    raw("------------------------------------\n");
+    raw("Usage: ./jants [COMMANDS] [OPTIONS]\n");
     raw("       Commands:\n");
     set_leading_spaces(8);
     print_help_arguement(af_help);
