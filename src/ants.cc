@@ -353,7 +353,6 @@ void Ants::search(Route& bestRoute, const double startTime)
     float prevBestScore = bestScore;
     long stagnantCount = 0;
     int itr = 0, nPheroAtMin = 0;
-    bool driedUp = false;
     float stagnancy, currMinPhero;
     double secElapsed = 0;
     Edges bestEdges;
@@ -372,7 +371,7 @@ void Ants::search(Route& bestRoute, const double startTime)
     {
         unsigned int tseed = this->mySpec.rand_seed + omp_get_thread_num();
 
-        while (!driedUp && stagnancy < 1.0f && secElapsed < MAX_SECONDS_ALLOWED)
+        while (stagnancy < 1.0f && secElapsed < MAX_SECONDS_ALLOWED)
         {
             #pragma omp for
             for (int i = 0; i < this->myPopSize; i++)
@@ -422,7 +421,7 @@ void Ants::search(Route& bestRoute, const double startTime)
                     currMinPhero = t.pheromone;
                     nPheroAtMin = 0;
                 }
-                else if (t.pheromone == 0)
+                else if (fabs(t.pheromone - this->myMinPhero) < 0.01)
                 {
                     nPheroAtMin++;
                 }
@@ -430,12 +429,6 @@ void Ants::search(Route& bestRoute, const double startTime)
 
             #pragma omp single
             {
-                if (nPheroAtMin == this->myTrails.size() - bestEdges.size())
-                {
-                    msg("Pheromones have evaporated! Search is halting.\n");
-                    driedUp = true;
-                }
-
                 if (bestScore == prevBestScore)
                     stagnantCount++;
                 else
@@ -445,15 +438,27 @@ void Ants::search(Route& bestRoute, const double startTime)
                 itr++;
                 stagnancy = (float) stagnantCount / myMaxStag;
                 secElapsed = (get_timestamp_us() - startTime) / 1e6;
-                msg("itr %5d, best %6.4f, time %6.2f, currMinPhero %3.2f, stagnancy %3.1f%%\n",
+                msg("itr %5d, best %6.4f, time %6.1f, minPhero %3.2f(%3d), stagnancy %3.1f%%\n",
                     itr,
                     bestScore,
                     secElapsed,
                     currMinPhero,
+                    this->myTrails.size() - nPheroAtMin,
                     100.0f * stagnancy);
                 this->myStream << itr << ", "
                                << std::fixed << std::setprecision(4) << secElapsed  << ", "
                                << " " << std::fixed << std::setprecision(4) << bestScore << "\n";
+
+
+                if (nPheroAtMin == this->myTrails.size() - bestEdges.size() ||
+                        stagnancy == 1.0f)
+                {
+                    msg("Solution converged. Reinitialising pheromones...\n");
+
+                    #pragma omp simd
+                    for (int i = 0; i < this->myTrails.size(); i++)
+                        this->myTrails[i].pheromone = 1.0f;
+                }
             }
         }
     }
