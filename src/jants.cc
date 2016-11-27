@@ -27,14 +27,14 @@ const argument_format af_grid       = {"-gr", "--grid", 2, "Do grid search on AC
 const argument_format af_loglv      = {"-lg", "--loglv", 1, "Set log level {0-4}"};
 const argument_format af_input      = {"-i", "--input", 1, "Set input file"};
 const argument_format af_output     = {"-o", "--output", 1, "Set output file (or \"stdout\")"};
-const argument_format af_seed       = {" - rs", "--randseed", 1, "Set starting RNG seed"};
-const argument_format af_pop        = {" - p", "--population", 1, "Set population size"};
-const argument_format af_stg        = {" - mxs", "--maxstagnancy", 1, "Set stopping stagnant iterations"};
-const argument_format af_alpha      = {" - a", "--alpha", 1, "Set importance of distance in ACO"};
-const argument_format af_beta       = {" - b", "--beta", 1, "Set importance of pheromone in ACO"};
-const argument_format af_pers       = {" - ps", "--persistence", 1, "Set persistence of pheromone in ACO"};
-const argument_format af_nbh        = {" - nd", "--nbhooddiv", 1, "Set nbhood divisor in ACO"};
-const argument_format af_mnph       = {" - mnp", "--minphero", 1, "Set min pheromone in ACO"};
+const argument_format af_seed       = {"-rs", "--randseed", 1, "Set starting RNG seed"};
+const argument_format af_pop        = {"-p", "--population", 1, "Set population size"};
+const argument_format af_stg        = {"-mxs", "--maxstagnancy", 1, "Set stopping stagnant iterations"};
+const argument_format af_alpha      = {"-a", "--alpha", 1, "Set importance of distance in ACO"};
+const argument_format af_beta       = {"-b", "--beta", 1, "Set importance of pheromone in ACO"};
+const argument_format af_pers       = {"-ps", "--persistence", 1, "Set persistence of pheromone in ACO"};
+const argument_format af_nbh        = {"-nd", "--nbhooddiv", 1, "Set nbhood divisor in ACO"};
+const argument_format af_mnph       = {"-mnp", "--minphero", 1, "Set min pheromone in ACO"};
 
 
 #define FOREACH_SEARCH_MODE(MACRO) \
