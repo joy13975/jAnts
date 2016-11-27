@@ -1,3 +1,3 @@
 #!/bin/tcsh
 make fresh
-./jants `cat goodParams.txt` -lg 4 -o stdout
+./jants `cat goodParams.txt` -lg 4 -o stdout -tl 10
