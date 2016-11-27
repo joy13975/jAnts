@@ -1,0 +1,23 @@
+[35m[MSG][0m Log level set to LOG_DEBUG
+[35m[MSG][0m Parsing input from file "res/fruitybun250_2016.vrp"
+[35m[MSG][0m Number of nodes: 250
+[35m[MSG][0m Running ACO search
+[35m[MSG][0m ACO settings: 
+ alpha:     8.000
+ beta:      1.000
+ pers:      0.850
+ minPhero:  -0.015
+ nbhood:    10
+ popSize:   2048
+ maxStag:   1000
+[35m[MSG][0m itr     1, best 5733.4312, time   4.99, currMinPhero 0.85, stagnancy 0.0%
+[35m[MSG][0m itr     2, best 5733.4312, time  10.39, currMinPhero 0.72, stagnancy 0.1%
+[35m[MSG][0m itr     3, best 5733.4312, time  16.08, currMinPhero 0.61, stagnancy 0.2%
+[35m[MSG][0m itr     4, best 5719.5547, time  21.28, currMinPhero 0.52, stagnancy 0.0%
+[35m[MSG][0m itr     5, best 5719.5547, time  26.34, currMinPhero 0.44, stagnancy 0.1%
+[35m[MSG][0m itr     6, best 5719.5547, time  31.67, currMinPhero 0.38, stagnancy 0.2%
+[35m[MSG][0m itr     7, best 5717.3027, time  36.90, currMinPhero 0.32, stagnancy 0.0%
+[35m[MSG][0m itr     8, best 5708.4854, time  42.00, currMinPhero 0.27, stagnancy 0.0%
+[35m[MSG][0m itr     9, best 5679.2607, time  47.19, currMinPhero 0.23, stagnancy 0.0%
+[35m[MSG][0m itr    10, best 5666.9487, time  52.31, currMinPhero 0.20, stagnancy 0.0%
+[35m[MSG][0m itr    11, best 5666.9487, time  57.55, currMinPhero 0.17, stagnancy 0.1%

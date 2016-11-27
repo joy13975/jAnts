@@ -1,0 +1,17 @@
+[35m[MSG][0m Log level set to LOG_DEBUG
+[35m[MSG][0m Parsing input from file "res/fruitybun250_2016.vrp"
+[35m[MSG][0m Number of nodes: 250
+[35m[MSG][0m Running ACO search
+[35m[MSG][0m ACO settings: 
+ alpha:     8.000
+ beta:      1.000
+ pers:      0.850
+ minPhero:  -0.015
+ nbhood:    10
+ popSize:   2048
+ maxStag:   1000
+[35m[MSG][0m itr     1, best 5747.0972, time   5.02, currMinPhero 0.85, stagnancy 0.0%
+[35m[MSG][0m itr     2, best 5732.1763, time  10.28, currMinPhero 0.72, stagnancy 0.0%
+[35m[MSG][0m itr     3, best 5732.1763, time  15.52, currMinPhero 0.61, stagnancy 0.1%
+[35m[MSG][0m itr     4, best 5721.5137, time  20.58, currMinPhero 0.52, stagnancy 0.0%
+[35m[MSG][0m itr     5, best 5721.5137, time  26.21, currMinPhero 0.44, stagnancy 0.1%
