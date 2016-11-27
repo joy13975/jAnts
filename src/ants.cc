@@ -155,7 +155,7 @@ inline void Ants::improvePaths(Paths& paths)
     for (Path& p : paths)
         applyTwoOpt(p);
 
-    // applyOneExchange(paths);
+    applyOneExchange(paths);
 }
 
 inline Ints Ants::pathToHops(const Paths &paths)
@@ -454,6 +454,7 @@ void Ants::search(Route& bestRoute, const double startTime)
                         stagnancy == 1.0f)
                 {
                     msg("Solution converged. Reinitialising pheromones...\n");
+                    stagnantCount = 0;
 
                     #pragma omp simd
                     for (int i = 0; i < this->myTrails.size(); i++)
