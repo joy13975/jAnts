@@ -1,3 +1,9 @@
 #!/bin/bash
+file=last-solution.txt
+
+if [ $# -gt 0 ]; then
+	file=$1
+fi
+
 cd res
-java -jar CVRPValidater.jar ../best-solution.txt $@
+java -jar CVRPValidater.jar ../$file

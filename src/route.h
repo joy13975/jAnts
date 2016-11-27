@@ -32,7 +32,7 @@ public:
     bool isDummy();
 
     template<typename T>
-    T calcScoreWithCache(const Cache<T> C) const
+    T calcScoreWithCache(const Cache<T>& C) const
     {
         const int N = this->myHops.size();
 

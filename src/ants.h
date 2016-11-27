@@ -12,7 +12,6 @@
 #define DEFAULT_ACO_PERSISTENCE     0.975f
 #define DEFAULT_ACO_MIN_PHERO       0.02f
 #define DEFAULT_ACO_NBHOOD_DIV      20
-#define MAX_SECONDS_ALLOWED         (60 * 29) //allow 29 minutes
 
 class Ants
 {
