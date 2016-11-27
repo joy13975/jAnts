@@ -6,7 +6,9 @@
 #include "typedefs.h"
 #include "route.h"
 
-std::stringstream solutionToStrStream(const String output_file, const Route& bestRoute);
+void solutionToStrStream(const String output_file,
+                         const Route& bestRoute,
+                         std::stringstream& ss);
 
 void writeStrStream(const String output_file, const std::stringstream& ss);
 

@@ -5,17 +5,15 @@
 #include "output_writer.h"
 #include "util.h"
 
-std::stringstream solutionToStrStream(const String output_file, const Route& bestRoute)
+void solutionToStrStream(const String output_file,
+                         const Route& bestRoute,
+                         std::stringstream& ss)
 {
-    std::stringstream ss;
-    //write file header
     ss << "login cy13308 67678\n";
     ss << "name Joy Yeh\n";
     ss << "algorithm Ant colony optimisation with Clark & Wright's savings heuristic\n";
     ss << "cost " << std::fixed  << std::setprecision(16) << bestRoute.calcScoreSerious() << "\n";
     ss << Route::genStr(bestRoute.getHops());
-
-    return ss;
 }
 
 

@@ -180,7 +180,8 @@ void parse_args(int argc, char *argv[])
 
 void writeSolution()
 {
-    std::stringstream solSs = solutionToStrStream(output_file, best_route);
+    std::stringstream solSs;
+    solutionToStrStream(output_file, best_route, solSs);
 
     String stdoutStr = "stdout";
     std::transform(stdoutStr.begin(), stdoutStr.end(), stdoutStr.begin(), ::tolower);
