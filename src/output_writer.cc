@@ -5,7 +5,7 @@
 #include "output_writer.h"
 #include "util.h"
 
-void writeSolution(const String output_file, const Route& bestRoute)
+std::stringstream solutionToStrStream(const String output_file, const Route& bestRoute)
 {
     std::stringstream ss;
     //write file header
@@ -15,7 +15,7 @@ void writeSolution(const String output_file, const Route& bestRoute)
     ss << "cost " << std::fixed  << std::setprecision(16) << bestRoute.calcScoreSerious() << "\n";
     ss << Route::genStr(bestRoute.getHops());
 
-    writeStrStream(output_file, ss);
+    return ss;
 }
 
 

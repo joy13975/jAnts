@@ -119,12 +119,12 @@ void set_log_level(Log_Level lvl)
     if (lvl < 0 || lvl >= LOG_ERROR)
     {
         err("Invalid log level: %d\n", lvl);
-        err("Must be between 0 and %d\n", LOG_ERROR);
-        raw("   LOG_PROOF    : %d\n", LOG_PROOF);
-        raw("   LOG_DEBUG    : %d\n", LOG_DEBUG);
-        raw("   LOG_WARN   : %d\n", LOG_WARN);
-        raw("   LOG_MESSAGE    : %d\n", LOG_MESSAGE);
-        raw("   LOG_RAW    : %d\n", LOG_RAW);
+        err("Must be between 0 and %d\n", LOG_RAW);
+        raw("   LOG_PROOF       : %d\n", LOG_PROOF);
+        raw("   LOG_DEBUG       : %d\n", LOG_DEBUG);
+        raw("   LOG_WARN        : %d\n", LOG_WARN);
+        raw("   LOG_MESSAGE     : %d\n", LOG_MESSAGE);
+        raw("   LOG_RAW         : %d\n", LOG_RAW);
         // raw("   LOG_ERROR  : %d\n", LOG_ERROR);
         // raw("   LOG_DEATH  : %d\n", LOG_DEATH);
         exit(1);

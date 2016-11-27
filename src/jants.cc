@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <signal.h>
 #include <iomanip>
+#include <algorithm>
+#include <iostream>
 
 #include "config.h"
 #include "typedefs.h"
@@ -22,17 +24,17 @@ const argument_format af_brand      = {"-br", "--basicrand", 0, "Do basic random
 const argument_format af_exc        = {"-ex", "--exchange", 0, "Do basic exchange search"};
 const argument_format af_grid       = {"-gr", "--grid", 2, "Do grid search on ACO with index range"};
 
-const argument_format af_loglv      = {"-lg", "--loglv", 1, "Set log level {0-6}"};
+const argument_format af_loglv      = {"-lg", "--loglv", 1, "Set log level {0-4}"};
 const argument_format af_input      = {"-i", "--input", 1, "Set input file"};
-const argument_format af_output     = {"-o", "--output", 1, "Set output file"};
-const argument_format af_seed       = {"-rs", "--randseed", 1, "Set starting RNG seed"};
-const argument_format af_pop        = {"-p", "--population", 1, "Set population size"};
-const argument_format af_stg        = {"-mxs", "--maxstagnancy", 1, "Set stopping stagnant iterations"};
-const argument_format af_alpha      = {"-a", "--alpha", 1, "Set importance of distance in ACO"};
-const argument_format af_beta       = {"-b", "--beta", 1, "Set importance of pheromone in ACO"};
-const argument_format af_pers       = {"-ps", "--persistence", 1, "Set persistence of pheromone in ACO"};
-const argument_format af_nbh        = {"-nd", "--nbhooddiv", 1, "Set nbhood divisor in ACO"};
-const argument_format af_mnph       = {"-mnp", "--minphero", 1, "Set min pheromone in ACO"};
+const argument_format af_output     = {"-o", "--output", 1, "Set output file (or \"stdout\")"};
+const argument_format af_seed       = {" - rs", "--randseed", 1, "Set starting RNG seed"};
+const argument_format af_pop        = {" - p", "--population", 1, "Set population size"};
+const argument_format af_stg        = {" - mxs", "--maxstagnancy", 1, "Set stopping stagnant iterations"};
+const argument_format af_alpha      = {" - a", "--alpha", 1, "Set importance of distance in ACO"};
+const argument_format af_beta       = {" - b", "--beta", 1, "Set importance of pheromone in ACO"};
+const argument_format af_pers       = {" - ps", "--persistence", 1, "Set persistence of pheromone in ACO"};
+const argument_format af_nbh        = {" - nd", "--nbhooddiv", 1, "Set nbhood divisor in ACO"};
+const argument_format af_mnph       = {" - mnp", "--minphero", 1, "Set min pheromone in ACO"};
 
 
 #define FOREACH_SEARCH_MODE(MACRO) \
@@ -176,6 +178,18 @@ void parse_args(int argc, char *argv[])
     }
 }
 
+void writeSolution()
+{
+    std::stringstream solSs = solutionToStrStream(output_file, best_route);
+
+    String stdoutStr = "stdout";
+    std::transform(stdoutStr.begin(), stdoutStr.end(), stdoutStr.begin(), ::tolower);
+    if (output_file.compare(stdoutStr) == 0)
+        std::cout << solSs.rdbuf();
+    else
+        writeStrStream(output_file, solSs);
+}
+
 void finalise_and_exit(int default_sig)
 {
     msg("Time: %.2f s\n", (get_timestamp_us() - start_time) / 1e6);
@@ -193,11 +207,15 @@ void finalise_and_exit(int default_sig)
         msg("Best cost: %.2f\n", best_route.calcScoreSerious());
 
         writeStrStream(data_output_file, data_stream);
-        writeSolution(output_file, best_route);
+        writeSolution();
 
         exit(default_sig);
     }
 }
+
+#define printWrn(fmt, ...) \
+if(LOG_WARN >= get_log_level()) \
+fprintf(stderr, fmt, ##__VA_ARGS__)
 
 void on_failure(int sig)
 {
@@ -206,10 +224,11 @@ void on_failure(int sig)
     // if the follow block fails again, just exit
     if (failure_count == 1)
     {
-        ERASE_LINE(); printf("\n");
+        ERASE_LINE(); printWrn("get_log_level() = %d (LOG_WARN=%d)\n",
+                               get_log_level(), LOG_WARN);
 
-        ERASE_LINE(); printf("[WARNING] Failure trap (%s)\n", strsignal(sig));
-        ERASE_LINE(); printf("[WARNING] Attempting to output latest results...\n");
+        ERASE_LINE(); printWrn("[WARNING] Failure trap (%s)\n", strsignal(sig));
+        ERASE_LINE(); printWrn("[WARNING] Attempting to output latest results...\n");
 
         finalise_and_exit(sig);
     }
@@ -259,7 +278,8 @@ int main(int argc, char *argv[])
                     {{20.0f, 1.0f}},
                     {{32.0f, 1.0f}},
                     {{64.0f, 1.0f}}
-                }};
+                }
+            };
             const std::array<float, 6> gridPerss     = {0.83f, 0.85f, 0.87f, 0.98f, 0.99f, 0.995f};
             const std::array<float, 6> gridMinPheros = {0.00f, 0.005f, 0.01f, 0.015f, 0.02f, 0.025f};
             const std::array<int, 5> gridNBHoodDivs  = {25, 30, 40, 50, 80};
@@ -272,13 +292,13 @@ int main(int argc, char *argv[])
             {
                 grid_serach_range[1] = maxGridIndex;
                 if (grid_serach_range[1] > maxGridIndex)
-                    wrn("Invalid ending index: %d\n", grid_serach_range[1]);
+                    wrn("Invalid ending index: % d\n", grid_serach_range[1]);
             }
 
             if (grid_serach_range[0] < 0)
             {
                 grid_serach_range[0] = 0;
-                wrn("Invalid starting index: %d\n", grid_serach_range[0]);
+                wrn("Invalid starting index: % d\n", grid_serach_range[0]);
             }
 
             for (int gridIndex = grid_serach_range[0];
@@ -307,7 +327,7 @@ int main(int argc, char *argv[])
 
                 const float bestCost = best_route.calcScoreSerious();
                 const double antTime = (get_timestamp_us() - start_time) / 1e6;
-                msg("Best cost: %.2f in %.2fs\n", bestCost, antTime);
+                msg("Best cost: % .2f in % .2fs\n", bestCost, antTime);
                 std::stringstream grid_stream;
                 grid_stream << std::fixed << std::setprecision(1) << gridAB[abIndex][0] << ", "
                             << std::fixed << std::setprecision(1) << gridAB[abIndex][1] << ", "
@@ -320,7 +340,7 @@ int main(int argc, char *argv[])
 
                 writeStrStreamMode(grid_output_file, grid_stream, std::ios_base::app);
                 writeStrStream(data_output_file, data_stream);
-                writeSolution(output_file, best_route);
+                writeSolution();
             }
 
             for (const std::array<float, 2> (&AB) : gridAB)
@@ -353,7 +373,7 @@ int main(int argc, char *argv[])
         break;
     }
     default:
-        die("Unknown search mode: %s", Search_Mode_String[search_mode]);
+        die("Unknown search mode: % s", Search_Mode_String[search_mode]);
     }
 
     finalise_and_exit(0);
