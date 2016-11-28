@@ -5,7 +5,7 @@
 #define ITERATION_PRINT_SAMPLES     10
 #endif
 
-#define DEFAULT_LOG_LEVEL           LOG_DEBUG // LOG_WARN
+#define DEFAULT_LOG_LEVEL           LOG_WARN
 #define DEFAULT_RAND_SEED           0xdeadbeef
 #define DEFAULT_INPUT_FILE          "res/fruitybun250_2016.vrp"
 #define DEFAULT_OUTPUT_FILE         "last-solution.txt"

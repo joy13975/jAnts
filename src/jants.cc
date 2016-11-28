@@ -18,6 +18,7 @@
 #include "output_writer.h"
 #include "ants.h"
 #include "basic_exchange.h"
+#include "divine.h"
 
 const argument_format af_help       = {"-h", "--help", 0, "Print help message"};
 const argument_format af_brand      = {"-br", "--basicrand", 0, "Do basic random search"};
@@ -27,6 +28,7 @@ const argument_format af_grid       = {"-gr", "--grid", 2, "Do grid search on AC
 const argument_format af_loglv      = {"-lg", "--loglv", 1, "Set log level {0-4}"};
 const argument_format af_input      = {"-i", "--input", 1, "Set input file"};
 const argument_format af_output     = {"-o", "--output", 1, "Set output file (or \"stdout\")"};
+const argument_format af_divine     = {"-dv", "--divine", 0, "Use existing route in divine.h"};
 const argument_format af_seed       = {"-rs", "--randseed", 1, "Set starting RNG seed"};
 const argument_format af_tlim       = {"-tl", "--timelimit", 1, "Set time limit in minutes"};
 const argument_format af_pop        = {"-p", "--population", 1, "Set population size"};
@@ -63,6 +65,7 @@ int failure_count               = 0;
 int grid_serach_range[2]        = {0, -1};
 long time_limt_sec              = DEFAULT_TIME_LIMIT_SEC;
 bool do_grid_search             = false;
+bool use_divine                 = false;
 Route best_route                = Route::Dummy();
 std::stringstream data_stream;
 
@@ -84,6 +87,7 @@ void print_help_and_exit()
     print_help_arguement(af_loglv);
     print_help_arguement(af_input);
     print_help_arguement(af_output);
+    print_help_arguement(af_divine);
     print_help_arguement(af_seed);
     print_help_arguement(af_tlim);
     print_help_arguement(af_pop);
@@ -135,6 +139,10 @@ void parse_args(int argc, char *argv[])
         else if (next_arg_matches(af_output))
         {
             output_file = next_arg();
+        }
+        else if (next_arg_matches(af_divine))
+        {
+            use_divine = true;
         }
         else if (next_arg_matches(af_seed))
         {
@@ -260,6 +268,8 @@ int main(int argc, char *argv[])
     Spec spec(rand_seed);
     parse_input(input_file, spec);
 
+    best_route = Route(spec.getNodes(), spec.getVCap());
+
     switch (search_mode)
     {
     case MODE_BRAND:
@@ -369,6 +379,14 @@ int main(int argc, char *argv[])
         else
         {
             msg("Running ACO search\n");
+
+            if (use_divine)
+            {
+                for (int& i : divineHops)
+                    --i;
+                best_route = Route(spec.getNodes(), divineHops, -1);
+            }
+
             Ants(spec,
                  population_size,
                  max_stagnancy,

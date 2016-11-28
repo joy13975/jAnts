@@ -108,6 +108,7 @@ Ints Route::genAscendHops(const int dim)
 Route::Route(const Nodes& nodes, const int vcap)
     : myNodes(&nodes)
 {
+    this->myHops = genAscendHops(nodes.size());
     this->insertDepots(vcap);
     this->myEdges = genEdges(this->myHops);
 }

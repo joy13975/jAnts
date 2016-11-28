@@ -396,7 +396,7 @@ inline Ants::Paths Ants::walk(unsigned int& seed)
 
 void Ants::search(Route& bestRoute, const double startTime)
 {
-    float bestScore = std::numeric_limits<float>::max();
+    float bestScore = bestRoute.calcScoreWithCache(this->myDists);
     float prevBestScore = bestScore;
     long stagnantCount = 0;
     int itr = 0, nPheroAtMin = 0;
@@ -414,6 +414,7 @@ void Ants::search(Route& bestRoute, const double startTime)
     raw_at(LOG_MESSAGE, "popSize:       %ld\n",     this->myPopSize);
     raw_at(LOG_MESSAGE, "maxStag:       %ld\n",     this->myMaxStag);
     raw_at(LOG_MESSAGE, "timeLimSec:    %ld\n",     this->myTimeLimSec);
+    dbg("Initial route: %s", Route::genStr(bestRoute.getHops()).c_str());
 
     #pragma omp parallel
     {

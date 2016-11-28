@@ -102,6 +102,6 @@ void parse_input(const String input_file,
     {
 
         Node n = nodes[i];
-        prf("Node #%d: (%d, %d) -> %d\n", i + 1, n.x, n.y, n.z);
+        prf("Node #%d: (%.2f, %.2f) with demand %.2f\n", i + 1, n.x, n.y, n.z);
     }
 }
