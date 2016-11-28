@@ -3,9 +3,9 @@
 
 #include <vector>
 
-#include "jints.h"
+#include "typedefs.h"
 
-typedef Int3 Node;
+typedef Float3 Node;
 
 typedef std::vector<Node> Nodes;
 

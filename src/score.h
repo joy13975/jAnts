@@ -1,7 +1,7 @@
 #ifndef _SCORE_H_
 #define _SCORE_H_
 
-#include "jints.h"
+#include "typedefs.h"
 #include "node.h"
 #include "cache.h"
 #include "util.h"

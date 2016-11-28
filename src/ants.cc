@@ -10,7 +10,6 @@
 #include "typedefs.h"
 #include "omp.h"
 #include "jrng.h"
-#include "jints.h"
 #include "config.h"
 
 Ants::Ants(const Spec& spec,
@@ -67,7 +66,7 @@ inline void Ants::applyOneExchange(Paths& paths)
                         const int node1 = path1Hops[node1Idx];
                         const int node2 = path2Hops[node2Idx];
 
-                        int load1, load2;
+                        float load1, load2;
                         if (((load1 =
                                     path1.load - this->myNodes[node1].z +
                                     this->myNodes[path2.hops[node2Idx]].z)
@@ -151,10 +150,57 @@ inline void Ants::applyTwoOpt(Path& path)
     }
 }
 
+inline void Ants::applyShuffle(Path& path)
+{
+    // Get tour size
+    const int nHops = path.hops.size();
+
+    // repeat until no improvement is made
+    bool improved = true;
+    while (improved)
+    {
+        improved = false;
+        float bestCost = path.cost;
+
+        #pragma omp simd
+        for (int i = 1; i < nHops - 1; i++)
+        {
+            for (int j = 1; j < nHops - 1; j++)
+            {
+                if (abs(i - j) <= 1)
+                    continue;
+                const int node = path.hops[i];
+                const int breakIdx = i < j ? j : j - 1;
+                const float costDiff = - this->myDists[path.hops[i - 1]][node]
+                                       - this->myDists[node][path.hops[i + 1]]
+                                       + this->myDists[path.hops[i - 1]][path.hops[i + 1]]
+                                       - this->myDists[path.hops[breakIdx]][path.hops[breakIdx + 1]]
+                                       + this->myDists[path.hops[breakIdx]][node]
+                                       + this->myDists[node][path.hops[breakIdx + 1]];
+
+                const float newCost = path.cost + costDiff;
+
+                if (newCost < bestCost)
+                {
+                    path.hops.erase(path.hops.begin() + i, path.hops.begin() + i + 1);
+                    path.hops.insert(path.hops.begin() + j, node);
+
+                    improved = true;
+                    path.cost = newCost;
+                    bestCost = newCost;
+                }
+            }
+        }
+    }
+}
+
 inline void Ants::improvePaths(Paths& paths)
 {
     for (Path& p : paths)
+    {
         applyTwoOpt(p);
+        applyShuffle(p);
+    }
 
     applyOneExchange(paths);
 }

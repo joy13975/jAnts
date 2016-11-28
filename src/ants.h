@@ -62,6 +62,7 @@ private:
     typedef std::vector<Path> Paths;
     inline void applyOneExchange(Paths& paths);
     inline void applyTwoOpt(Path& path);
+    inline void applyShuffle(Path& path);
     inline void improvePaths(Paths& paths);
     inline Ints pathToHops(const Paths &paths);
     inline float sumPathCosts(const Paths &paths);
@@ -69,7 +70,7 @@ private:
     typedef struct WayPoint
     {
         int left, right;
-        int load;
+        float load;
         struct WayPoint *otherEnd;
     } WayPoint;
     typedef std::vector<WayPoint> WayPoints;

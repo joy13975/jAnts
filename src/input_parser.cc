@@ -21,22 +21,28 @@ void parse_input(const String input_file,
     int mode_start_line = -1;
     Nodes nodes;
 
+    const String dimPrefix = "DIMENSION : ";
+    const String capPrefix = "CAPACITY : ";
+    const String nodeSecTag = "NODE_COORD_SECTION";
+    const String demSecTag = "DEMAND_SECTION";
+    int dim = -1;
+    int capacity = -1;
+
     char line_buffer[BUFFER_SIZE] = {0};
     for (int lineno = 0; fgets(line_buffer, BUFFER_SIZE, fp); lineno++)
     {
-        if (lineno == 0)
+        String lineStr = String(line_buffer);
+        if (lineStr.compare(0, dimPrefix.size(), dimPrefix) == 0)
         {
             //first line is the number of nodes
-            int dim;
             sscanf(line_buffer, "DIMENSION : %d", &dim);
             spec.setDim(dim);
 
             for (int i = 0; i < dim; i++)
                 nodes.push_back(Node(0, 0, 0));
         }
-        else if (lineno == 1)
+        else if (lineStr.compare(0, capPrefix.size(), capPrefix) == 0)
         {
-            int capacity;
             sscanf(line_buffer, "CAPACITY : %d", &(capacity));
             spec.setVCap(capacity);
         }
@@ -44,18 +50,14 @@ void parse_input(const String input_file,
         {
             if (mode == UNSET)
             {
-                if (!strcmp(line_buffer, "NODE_COORD_SECTION\n"))
+                if (lineStr.compare(0, nodeSecTag.size(), nodeSecTag) == 0)
                     mode = COORD_MODE;
-                else if (!strcmp(line_buffer, "DEMAND_SECTION\n"))
+                else if (lineStr.compare(0, demSecTag.size(), demSecTag) == 0)
                     mode = DEMAND_MODE;
                 else
-                    die("Unknown section string: \"%s\"\n", line_buffer);
+                    wrn("Ignoring line: %s\n", lineStr.substr(0, lineStr.size() - 1).c_str());
 
-                if (mode == UNSET)
-                {
-                    die("Error while parsing input:\n\tExpecting \"NODE_COORD_SECTION\" or \"DEMAND_SECTION\", but got \"%s\"\n", line_buffer);
-                }
-                else
+                if (mode != UNSET)
                 {
                     mode_start_line = lineno;
                 }
@@ -65,8 +67,8 @@ void parse_input(const String input_file,
                 int idx;
                 if (mode == COORD_MODE)
                 {
-                    int x, y;
-                    sscanf(line_buffer, "%d %d %d", &idx, &x, &y);
+                    float x, y;
+                    sscanf(line_buffer, "%d %f %f", &idx, &x, &y);
                     if (idx < 1 || idx > spec.getDim())
                         die("Node index %d is out of range (1-%d)\n", idx, spec.getDim());
                     nodes[idx - 1].x = x;
@@ -74,8 +76,8 @@ void parse_input(const String input_file,
                 }
                 else if (mode == DEMAND_MODE)
                 {
-                    int demand;
-                    sscanf(line_buffer, "%d %d", &idx, &demand);
+                    float demand;
+                    sscanf(line_buffer, "%d %f", &idx, &demand);
                     if (idx < 1 || idx > spec.getDim())
                         die("Node index %d is out of range (1-%d)\n", idx, spec.getDim());
                     nodes[idx - 1].z = demand;
@@ -86,6 +88,11 @@ void parse_input(const String input_file,
             }
         }
     }
+
+    if (dim == -1)
+        die("Could not parse dimension\n");
+    if (capacity == -1)
+        die("Could not parse capacity\n");
 
     spec.setNodes(nodes);
 
