@@ -1,3 +1,4 @@
 #!/bin/tcsh
-make fresh
+make clean
+make all
 ./jants `cat goodParams.txt` -lg 4 -o stdout -tl 10
