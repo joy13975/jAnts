@@ -1,2 +1,0 @@
-#!/bin/bash
-grep cost distOutputs/* | sort -k 2 -r

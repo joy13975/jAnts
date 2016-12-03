@@ -1,2 +1,0 @@
-#!/bin/bash
-watch 'res=$(scanFreeHosts jants busy); n=$(echo $res | wc -w); echo $n hosts; echo $res'
