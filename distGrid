@@ -1,0 +1,49 @@
+#!/bin/bash
+
+free_hosts=$(scanFreeHosts jants)
+n_free_hosts=$(echo "${free_hosts[@]}" | wc -w)
+echo "There are $n_free_hosts jants-free hosts:"
+echo ${free_hosts[@]}
+
+echo "Enter starting index: "
+read startIdx
+echo "Enter ending index: "
+read endIdx
+echo "Use first N machines: "
+read maxMachines
+
+if [[ $maxMachines -gt $n_free_hosts ]]; then
+	maxMachines=$n_free_hosts
+fi
+
+echo "Indexes $startIdx ~ $endIdx, over $maxMachines machines"
+step=$(( ($endIdx - $startIdx + ($maxMachines - 1)) / $maxMachines ))
+if [[ -z "$step" ]]; then
+	echo "Failed to parse numbers"
+	exit
+fi
+
+echo "Step is $step; confirm? yes/no"
+read yesno
+
+if [[ "$yesno" != "yes" ]]; then
+	exit
+fi
+
+# Convert lines of hostnames into array
+free_hosts=( $free_hosts )
+for ((i=0;i<$maxMachines;i++)); do
+	a=$(( $startIdx + ($step * $i) ))
+	b=$(( $a + $step ))
+	if [[ $b -gt $endIdx ]]; then
+		b=$endIdx
+	fi
+
+	host=${free_hosts[$i]}
+	job="cd src/jants; screen -dm ./jants -gr $a $b"
+	cmd="goto $host "'"'$job'"'
+
+	echo "Sending range $a ~ $b to $host"
+#	echo Command is: "$cmd"
+	goto $host "$job"
+done

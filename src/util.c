@@ -1,3 +1,8 @@
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -8,7 +13,7 @@
 
 #include "util.h"
 
-Log_Level log_level       = DEFAULT_LOG_LEVEL;
+Log_Level log_level         = UTIL_DEFAULT_LOG_LEVEL;
 int print_leading_spaces    = 0;
 
 //argument parsing
@@ -114,18 +119,18 @@ void set_log_level(Log_Level lvl)
     if (lvl < 0 || lvl >= LOG_ERROR)
     {
         err("Invalid log level: %d\n", lvl);
-        err("Must be between 0 and %d\n", LOG_ERROR);
-        raw("   LOG_PRF    : %d\n", LOG_PRF);
-        raw("   LOG_DBG    : %d\n", LOG_DBG);
-        raw("   LOG_WARN   : %d\n", LOG_WARN);
-        raw("   LOG_MSG    : %d\n", LOG_MSG);
-        raw("   LOG_RAW    : %d\n", LOG_RAW)
+        err("Must be between 0 and %d\n", LOG_RAW);
+        raw("   LOG_PROOF       : %d\n", LOG_PROOF);
+        raw("   LOG_DEBUG       : %d\n", LOG_DEBUG);
+        raw("   LOG_WARN        : %d\n", LOG_WARN);
+        raw("   LOG_MESSAGE     : %d\n", LOG_MESSAGE);
+        raw("   LOG_RAW         : %d\n", LOG_RAW);
         // raw("   LOG_ERROR  : %d\n", LOG_ERROR);
         // raw("   LOG_DEATH  : %d\n", LOG_DEATH);
         exit(1);
     }
     log_level = lvl;
-    msg("Debug level set to: %d\n", log_level);
+    msg("Log level set to %s\n", Log_Level_String[log_level]);
 }
 
 void _log(const char *filename, const int line, const Log_Level lvl, const char *fmt, ...)
@@ -142,12 +147,12 @@ void _log(const char *filename, const int line, const Log_Level lvl, const char 
         FILE *fd;
         switch (lvl)
         {
-        case LOG_PRF:
+        case LOG_PROOF:
             fd = stdout;
             asprintf(&new_fmt, "%s[PRF]%s%s%s",
                      CLR_CYN, CLR_NRM, space_buffer, fmt);
             break;
-        case LOG_DBG:
+        case LOG_DEBUG:
             fd = stdout;
             asprintf(&new_fmt, "%s[DBG]%s%s%s",
                      CLR_BLU, CLR_NRM, space_buffer, fmt);
@@ -157,7 +162,7 @@ void _log(const char *filename, const int line, const Log_Level lvl, const char 
             asprintf(&new_fmt, "%s[WRN]%s%s%s",
                      CLR_YEL, CLR_NRM, space_buffer, fmt);
             break;
-        case LOG_MSG:
+        case LOG_MESSAGE:
             fd = stdout;
             asprintf(&new_fmt, "%s[MSG]%s%s%s",
                      CLR_MAG, CLR_NRM, space_buffer, fmt);
@@ -173,7 +178,7 @@ void _log(const char *filename, const int line, const Log_Level lvl, const char 
             break;
         case LOG_DEATH:
             fd = stderr;
-            asprintf(&new_fmt, "%s[DIE %s:%d]%s%s%s\n",
+            asprintf(&new_fmt, "\n%s[DIE %s:%d]%s%s%s",
                      CLR_RED, filename,  line, CLR_NRM, space_buffer, fmt);
             break;
         default:
@@ -210,3 +215,7 @@ double get_timestamp_us()
     gettimeofday(&tv, NULL);
     return tv.tv_usec + tv.tv_sec * 1e6;
 }
+
+#if defined (__cplusplus)
+}
+#endif

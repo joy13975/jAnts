@@ -1,0 +1,2 @@
+cvrp-runtime-in-minutes 10
+note-for-marker My code should produce a cost of ~5574 at 5m, and ~5569 at 10m. For marking purposes it has been limited at 10m. You can interrupt and still get the output in stdout, which will be the best solution discovered at the time of interrupt.
